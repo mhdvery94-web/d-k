@@ -71,7 +71,7 @@ function LoginPage({ onLogin }) {
     <div className="dk-login">
       <div className="dk-login-card">
         <div className="dk-login-brand">
-          <img src="/src/assets/icon.png" alt="Dapur Kemas" className="dk-login-logo" />
+          <img src="/icon.png" alt="Dapur Kemas" className="dk-login-logo" />
           <h1>DAPUR - KEMAS</h1>
           <p>Panel Admin</p>
         </div>
@@ -401,7 +401,7 @@ function Header({ onLogout, onSettings }) {
     <header className="dk-header admin-header">
       <div className="dk-header-top">
         <div className="dk-brand">
-          <span className="dk-brand-icon"><img src="/src/assets/icon.png" alt="Dapur Kemas" /></span>
+          <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
           <div>
             <h1>DAPUR - KEMAS</h1>
             <p>Panel Admin</p>

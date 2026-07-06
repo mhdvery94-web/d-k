@@ -4,7 +4,7 @@ const urlsToCache = [
   '/index.html',
   '/src/main.jsx',
   '/src/styles.css',
-  '/src/assets/icon.png'
+  '/icon.png'
 ];
 
 // Install event - cache assets

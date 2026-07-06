@@ -37,7 +37,7 @@ function Header({ onTracking }) {
     <header className="dk-header">
       <div className="dk-header-top">
         <div className="dk-brand">
-          <span className="dk-brand-icon"><img src="/src/assets/icon.png" alt="Dapur Kemas" /></span>
+          <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
           <div>
             <h1>DAPUR - KEMAS</h1>
             <p>Aplikasi Pemesanan Makanan</p>
