@@ -48,6 +48,7 @@ async function createOrderFromPending(pending) {
         serviceFee: locked.serviceFee,
         deliveryFee: locked.deliveryFee,
         total: locked.total,
+        paymentStatus: 'paid',
         midtransTransactionId: locked.midtransTransactionId || locked.sessionToken,
         paidAt: new Date(),
       },
