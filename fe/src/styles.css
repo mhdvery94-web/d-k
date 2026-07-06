@@ -1817,9 +1817,9 @@ img { display: block; max-width: 100%; }
 .dk-order-items span { font-size: 13px; color: #475569; background: #F8FAFC; padding: 3px 8px; border-radius: 6px; }
 .dk-admin-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
-/* ── Header nav button ── */
-.dk-btn-nav { padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.15); font-size: 13px; font-weight: 500; cursor: pointer; color: white; transition: all 0.2s; backdrop-filter: blur(4px); }
-.dk-btn-nav:hover { background: rgba(255,255,255,0.25); }
+/* ── Header nav button contrast fix ── */
+.dk-btn-nav { padding: 9px 16px; border-radius: 999px; border: 1.5px solid #93C5FD; background: #1D4ED8; font-size: 13px; font-weight: 700; cursor: pointer; color: #FFFFFF; transition: all 0.2s; box-shadow: 0 6px 16px rgba(29, 78, 216, 0.20); }
+.dk-btn-nav:hover { background: #1E40AF; border-color: #1E40AF; color: #FFFFFF; }
 
 /* ── Confirmation Dialog (admin) ── */
 .dk-dialog { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 1000; }
@@ -1881,20 +1881,24 @@ img { display: block; max-width: 100%; }
 .dk-pending-info {
   margin: 32px 0;
   padding: 20px;
-  background: #F8FAFC;
-  border-radius: 12px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(29, 78, 216, 0.08);
 }
 
 .dk-pending-info p {
   font-size: 14px;
-  color: #334155;
+  color: #1E3A8A;
   margin-bottom: 8px;
+  font-weight: 650;
 }
 
 .dk-pending-note {
   font-size: 13px;
-  color: #64748B;
+  color: #475569 !important;
   margin: 0 !important;
+  font-weight: 500 !important;
 }
 
 .dk-pending-actions {

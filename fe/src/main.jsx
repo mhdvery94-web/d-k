@@ -681,9 +681,10 @@ function PendingPaymentPage({ sessionToken, onMenu, onReceipt }) {
         </div>
 
         <div className="dk-pending-info">
-          <p>Scan QR code di aplikasi e-wallet atau mobile banking Anda</p>
+          <p>Lanjutkan pembayaran di popup Midtrans yang terbuka.</p>
+          <p>Pilih metode QRIS, lalu ikuti instruksi sandbox Midtrans.</p>
           <p className="dk-pending-note">
-            Pembayaran akan terverifikasi otomatis setelah berhasil
+            Status dicek otomatis. Jangan tutup halaman ini sebelum pembayaran selesai.
           </p>
         </div>
 
@@ -774,12 +775,23 @@ function App() {
       const result = await response.json();
       if (!result.success) throw new Error(result.message || 'Gagal membuat pembayaran');
 
-      if (result.data?.sessionToken) {
-        setPendingPayment(result.data.sessionToken);
-        setPage('pending');
-      } else {
+      if (!result.data?.sessionToken) {
         throw new Error('Token pembayaran tidak diterima dari backend.');
       }
+
+      if (!result.data?.snapToken || !window.snap) {
+        throw new Error('Popup pembayaran Midtrans belum siap. Muat ulang halaman lalu coba lagi.');
+      }
+
+      setPendingPayment(result.data.sessionToken);
+      setPage('pending');
+
+      window.snap.pay(result.data.snapToken, {
+        onSuccess: () => setPage('pending'),
+        onPending: () => setPage('pending'),
+        onClose: () => setPage('pending'),
+        onError: () => setPage('pending'),
+      });
     } catch (error) {
       throw error;
     }
