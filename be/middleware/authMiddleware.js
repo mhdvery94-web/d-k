@@ -7,15 +7,16 @@ class AuthMiddleware {
   verifyToken(req, res, next) {
     try {
       const authHeader = req.headers.authorization;
+      const queryToken = typeof req.query.token === 'string' ? req.query.token : null;
 
-      if (!authHeader) {
+      if (!authHeader && !queryToken) {
         return res.status(401).json({
           success: false,
           message: 'Token tidak ditemukan',
         });
       }
 
-      const token = authHeader.split(' ')[1]; // Bearer TOKEN
+      const token = queryToken || authHeader.split(' ')[1]; // Bearer TOKEN
 
       if (!token) {
         return res.status(401).json({
