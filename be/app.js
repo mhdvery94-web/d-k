@@ -83,9 +83,10 @@ if (require.main === module) {
   startPendingPaymentCron();
 
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
+  const HOST = process.env.HOST || '127.0.0.1';
+  app.listen(PORT, HOST, () => {
     console.log(`🚀 Dapur Kemas API server running on port ${PORT}`);
-    console.log(`📍 Health check: http://localhost:${PORT}/health`);
+    console.log(`📍 Health check: http://${HOST}:${PORT}/health`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 
