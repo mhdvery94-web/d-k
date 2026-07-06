@@ -62,13 +62,14 @@ react-dapur-kemas/
       admin.jsx
       data.js
       styles.css
-      assets/icon.png
+    public/
+      icon.png
 ```
 
 ## Teknologi
 
 - Backend: Node.js, Express 5, Prisma ORM, MySQL, JWT, bcrypt, nodemailer, Midtrans SDK, node-cron, multer.
-- Frontend: React 18, Vite, CSS custom.
+- Frontend: React 18, Vite, CSS custom. Browser API memakai relative path `/api`.
 - Database: MySQL.
 - Payment: Midtrans Snap sandbox, QRIS only.
 - Email testing: Mailtrap SMTP sandbox.
@@ -87,8 +88,9 @@ Buat atau update file `.env`:
 ```env
 DATABASE_URL="mysql://root:@localhost:3306/dapur_kemas_db"
 JWT_SECRET="change-this-secret"
-PORT=3000
-BASE_URL="http://localhost:3000"
+HOST="127.0.0.1"
+PORT=5000
+BASE_URL="http://localhost:5000"
 FRONTEND_URL="http://localhost:5173"
 
 EMAIL_HOST="sandbox.smtp.mailtrap.io"
@@ -128,7 +130,7 @@ npm run dev
 Health check:
 
 ```text
-GET http://localhost:3000/health
+GET http://127.0.0.1:5000/health
 ```
 
 ## Setup Frontend
@@ -200,7 +202,7 @@ Field alamat penting:
 Base URL lokal:
 
 ```text
-http://localhost:3000/api
+http://127.0.0.1:5000/api
 ```
 
 ### Auth
@@ -302,7 +304,7 @@ MIDTRANS_IS_PRODUCTION=false
 Untuk test QRIS sandbox penuh, backend perlu URL publik agar webhook Midtrans bisa masuk. Pakai `ngrok` atau tunnel lain:
 
 ```bash
-ngrok http 3000
+ngrok http 5000
 ```
 
 Set webhook URL di dashboard Midtrans sandbox:
@@ -315,7 +317,7 @@ Catatan: QRIS sandbox tidak dibayar memakai mobile banking asli. Gunakan simulat
 
 ## OTP Email
 
-Untuk development, project memakai Mailtrap SMTP sandbox. Email OTP masuk ke inbox Mailtrap, bukan email real.
+Untuk development, project memakai Mailtrap SMTP sandbox. Email OTP masuk ke inbox Mailtrap, bukan email real. OTP disimpan di tabel `otp_tokens` dalam bentuk hash bcrypt, memiliki expiry 15 menit, status `used`, dan attempt counter.
 
 Endpoint OTP:
 
@@ -337,7 +339,7 @@ Untuk production, ganti Mailtrap dengan Brevo, Resend, SendGrid, Mailgun, atau S
 9. Build frontend dengan `npm run build` di `fe`.
 10. Serve frontend `dist` via Nginx.
 11. Jalankan backend via PM2.
-12. Set reverse proxy Nginx untuk `/api` ke backend port `3000`.
+12. Set reverse proxy Nginx untuk `/api` ke backend lokal `127.0.0.1:5000`.
 13. Set webhook Midtrans ke domain production.
 14. Ganti Midtrans ke production jika sudah siap live.
 
@@ -349,6 +351,28 @@ Backend:
 cd be
 npx prisma validate
 npm run start
+```
+
+VPS PM2:
+
+```bash
+cd /var/www/html/d-k/be
+pm2 start npm --name d-k-api -- start --update-env
+pm2 restart d-k-api --update-env
+pm2 save
+```
+
+Nginx proxy inti:
+
+```nginx
+location /api/ {
+    proxy_pass http://127.0.0.1:5000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
 ```
 
 Frontend:
@@ -381,7 +405,6 @@ GET /api/reports/sales?startDate=2026-01-01&endDate=2026-12-31
 
 ## Saran Lanjutan
 
-- Tambah tabel `otp_tokens` agar OTP tersimpan hashed di database, bukan memory Map.
 - Tambah rate limit login dan OTP.
 - Tambah audit log admin untuk perubahan status order.
 - Tambah penyimpanan checklist penjual ke database.

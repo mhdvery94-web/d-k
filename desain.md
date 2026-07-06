@@ -24,7 +24,7 @@ Pembeli/Admin Browser
         v
 Frontend fe/
         |
-        | HTTP /api
+        | HTTP relative /api
         v
 Backend be/ Express
         |
@@ -41,6 +41,7 @@ Komponen utama:
 - Frontend pembeli: `fe/src/main.jsx`.
 - Frontend admin: `fe/src/admin.jsx`.
 - Styling global: `fe/src/styles.css`.
+- Icon aplikasi: `fe/public/icon.png`.
 - Backend entrypoint: `be/app.js`.
 - Prisma schema: `be/prisma/schema.prisma`.
 - Payment routes: `be/routes/paymentRoutes.js`.
@@ -142,6 +143,12 @@ Middleware:
 - JSON body limit `10mb`.
 - Static `/uploads`.
 - Error handler global.
+
+Runtime:
+
+- Backend membaca `PORT` dari `.env`.
+- VPS memakai `PORT=5000` dan `HOST=127.0.0.1`.
+- Nginx expose public app di port `8080`, lalu proxy `/api` ke backend lokal.
 
 Cron:
 
@@ -330,26 +337,17 @@ Jika cancelled, stok dikembalikan.
 Admin klik lupa password/username
   -> POST /api/auth/forgot-password atau forgot-username
   -> backend generate OTP
-  -> OTP disimpan sementara di memory Map
+  -> OTP di-hash bcrypt
+  -> OTP disimpan di tabel otp_tokens
   -> email dikirim via Mailtrap SMTP
   -> admin input OTP
-  -> backend validasi OTP
+  -> backend validasi hash OTP, expiry, used, dan attempts
 ```
 
-Kelemahan saat ini:
+Catatan production:
 
-- OTP masih di memory Map.
-- OTP hilang jika backend restart.
-- Belum ada rate limit.
-- OTP belum di-hash.
-
-Rekomendasi production:
-
-- Buat tabel `otp_tokens`.
-- Simpan OTP hashed.
-- Tambah attempt count.
-- Tambah expiry.
 - Tambah rate limit per email/IP.
+- Ganti Mailtrap sandbox ke provider email production seperti Brevo, Resend, SendGrid, Mailgun, atau SMTP domain sendiri.
 
 ## Deployment VPS Design
 
@@ -358,7 +356,7 @@ Rekomendasi production:
 ```text
 Nginx
   -> /          serve fe/dist
-  -> /api      proxy http://127.0.0.1:3000
+  -> /api      proxy http://127.0.0.1:5000
 
 PM2
   -> be/app.js
@@ -373,31 +371,31 @@ Environment VPS:
 - Frontend build tidak menyimpan secret backend.
 - Midtrans production key hanya di backend.
 - Mail provider production pakai Brevo/Resend/SMTP domain.
+- Database backup `.sql` tidak di-push ke GitHub public.
+- Backend dijalankan via PM2 dengan `pm2 start npm --name d-k-api -- start --update-env`.
 
 ## Review Masalah Tersisa
 
-1. OTP belum production ready.
-2. Checklist penjual belum tersimpan di database.
-3. Upload gambar admin masih belum sepenuhnya memakai endpoint upload.
-4. Payment QRIS sandbox butuh tunnel untuk webhook asli.
-5. Report admin sudah query API, tetapi belum ada export file PDF asli.
-6. Tidak ada automated test.
-7. `.env.example` belum tersedia.
-8. Data QA/pending payment perlu dibersihkan sebelum production.
-9. Logging masih memakai `console.log`/`console.error`; production sebaiknya pakai logger.
-10. Backend belum punya rate limit auth/payment.
+1. Checklist penjual belum tersimpan permanen di database dari UI.
+2. Upload gambar admin masih perlu QA endpoint upload.
+3. Payment QRIS sandbox perlu webhook publik VPS/ngrok untuk settlement asli.
+4. Report admin sudah query API, tetapi belum ada export file PDF asli.
+5. Tidak ada automated test.
+6. `.env.example` belum tersedia.
+7. Data QA/pending payment perlu dibersihkan sebelum production.
+8. Logging masih memakai `console.log`/`console.error`; production sebaiknya pakai logger.
+9. Backend belum punya rate limit auth/payment.
 
 ## Roadmap Lanjutan
 
 Prioritas tinggi:
 
 1. Buat `.env.example`.
-2. Buat tabel `otp_tokens`.
-3. Tambah rate limit OTP dan login.
-4. Setup upload gambar menu ke backend.
-5. Setup ngrok dan webhook Midtrans sandbox.
-6. Test full payment settlement.
-7. Simpan checklist penjual ke database.
+2. Tambah rate limit OTP dan login.
+3. Setup upload gambar menu ke backend.
+4. Setup webhook Midtrans sandbox ke VPS.
+5. Test full payment settlement.
+6. Simpan checklist penjual ke database.
 
 Prioritas sedang:
 
