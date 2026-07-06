@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build output
+fe/dist/
+
+# Environment files
+be/.env
+be/.env.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Prisma
+be/prisma/*.db
+be/prisma/*.db-journal
+
+# Uploads (keep directory but ignore files)
+be/uploads/*
+!be/uploads/.gitkeep
+
+# Backups
+be/backups/
+
+# Temporary files
+*.tmp
+*.temp
