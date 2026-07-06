@@ -35,6 +35,8 @@ be/uploads/*
 
 # Backups
 be/backups/
+db-backup/
+db-backup/*.sql
 
 # Temporary files
 *.tmp
