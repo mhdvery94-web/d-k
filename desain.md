@@ -90,7 +90,7 @@ Komponen utama:
 - `ForgotPasswordModal`: OTP reset password.
 - `ForgotUsernameModal`: OTP lupa username.
 - `Header`: navigasi admin.
-- `SettingsModal`: placeholder pengaturan akun.
+- `SettingsModal`: modal pengaturan akun.
 - `OrderManager`: list order dan update status.
 - `MenuForm`: tambah/edit menu.
 - `CategoryForm`: tambah/edit kategori.
@@ -139,15 +139,15 @@ Backend memakai Express. `app.js` mendaftarkan route:
 
 Middleware:
 
-- CORS sesuai `FRONTEND_URL`.
+- CORS dibatasi ke origin frontend yang diizinkan.
 - JSON body limit `10mb`.
 - Static `/uploads`.
 - Error handler global.
 
 Runtime:
 
-- Backend membaca `PORT` dari `.env`.
-- VPS memakai `PORT=5000` dan `HOST=127.0.0.1`.
+- Backend membaca konfigurasi runtime dari environment server.
+- VPS memakai backend lokal di port internal `5000` dan host lokal `127.0.0.1`.
 - Nginx expose public app di port `8080`, lalu proxy `/api` ke backend lokal.
 
 Cron:
@@ -365,11 +365,11 @@ MySQL
   -> dapur_kemas_db
 ```
 
-Environment VPS:
+Konsep deploy VPS:
 
-- `.env` backend disimpan di server, bukan public directory.
-- Frontend build tidak menyimpan secret backend.
-- Midtrans production key hanya di backend.
+- Konfigurasi runtime dan semua kredensial disimpan di server atau secret manager, bukan repository public.
+- Frontend build tidak menyimpan kredensial backend.
+- Payment key hanya dipakai backend.
 - Mail provider production pakai Brevo/Resend/SMTP domain.
 - Database backup `.sql` tidak di-push ke GitHub public.
 - Backend dijalankan via PM2 dengan `pm2 start npm --name d-k-api -- start --update-env`.
@@ -381,21 +381,19 @@ Environment VPS:
 3. Payment QRIS sandbox perlu webhook publik VPS/ngrok untuk settlement asli.
 4. Report admin sudah query API, tetapi belum ada export file PDF asli.
 5. Tidak ada automated test.
-6. `.env.example` belum tersedia.
-7. Data QA/pending payment perlu dibersihkan sebelum production.
-8. Logging masih memakai `console.log`/`console.error`; production sebaiknya pakai logger.
-9. Backend belum punya rate limit auth/payment.
+6. Data QA/pending payment perlu dibersihkan sebelum production.
+7. Logging masih memakai `console.log`/`console.error`; production sebaiknya pakai logger.
+8. Backend belum punya rate limit auth/payment.
 
 ## Roadmap Lanjutan
 
 Prioritas tinggi:
 
-1. Buat `.env.example`.
-2. Tambah rate limit OTP dan login.
-3. Setup upload gambar menu ke backend.
-4. Setup webhook Midtrans sandbox ke VPS.
-5. Test full payment settlement.
-6. Simpan checklist penjual ke database.
+1. Tambah rate limit OTP dan login.
+2. Setup upload gambar menu ke backend.
+3. Setup webhook Midtrans sandbox ke VPS.
+4. Test full payment settlement.
+5. Simpan checklist penjual ke database.
 
 Prioritas sedang:
 

@@ -83,30 +83,7 @@ cd be
 npm install
 ```
 
-Buat atau update file `.env`:
-
-```env
-DATABASE_URL="mysql://root:@localhost:3306/dapur_kemas_db"
-JWT_SECRET="change-this-secret"
-HOST="127.0.0.1"
-PORT=5000
-BASE_URL="http://localhost:5000"
-FRONTEND_URL="http://localhost:5173"
-
-EMAIL_HOST="sandbox.smtp.mailtrap.io"
-EMAIL_PORT=2525
-EMAIL_USER="mailtrap-user"
-EMAIL_PASS="mailtrap-pass"
-EMAIL_FROM="Dapur Kemas <from@example.com>"
-
-MIDTRANS_SERVER_KEY="Mid-server-..."
-MIDTRANS_CLIENT_KEY="Mid-client-..."
-MIDTRANS_IS_PRODUCTION=false
-MIDTRANS_MERCHANT_ID="M564381926"
-
-UPLOAD_DIR="uploads"
-MAX_FILE_SIZE=5242880
-```
+Siapkan konfigurasi runtime di server atau mesin lokal sesuai environment masing-masing. Jangan simpan kredensial database, email, payment, atau JWT di repository public.
 
 Jalankan migration dan generate client:
 
@@ -163,15 +140,7 @@ npm run build
 
 ## Akun Admin Default
 
-Seed membuat akun admin:
-
-```text
-username: admin
-password: admin123
-email: admin@dapurkemas.com
-```
-
-Ganti password dan `JWT_SECRET` sebelum production.
+Akun admin dibuat melalui seed atau data import database. Ganti kredensial awal sebelum production.
 
 ## Database
 
@@ -295,13 +264,7 @@ Status order:
 
 ## Payment Midtrans Sandbox
 
-Saat ini payment memakai sandbox:
-
-```env
-MIDTRANS_IS_PRODUCTION=false
-```
-
-Untuk test QRIS sandbox penuh, backend perlu URL publik agar webhook Midtrans bisa masuk. Pakai `ngrok` atau tunnel lain:
+Saat ini payment memakai Midtrans Snap sandbox. Untuk test QRIS sandbox penuh, backend perlu URL publik agar webhook Midtrans bisa masuk. Pakai VPS public endpoint atau tunnel:
 
 ```bash
 ngrok http 5000
@@ -332,7 +295,7 @@ Untuk production, ganti Mailtrap dengan Brevo, Resend, SendGrid, Mailgun, atau S
 2. Install MySQL.
 3. Buat database `dapur_kemas_db`.
 4. Upload project tanpa `node_modules` dan tanpa `dist` jika build di server.
-5. Isi `.env` production di server.
+5. Isi konfigurasi runtime production di server atau secret manager.
 6. Jalankan `npm install` di `be` dan `fe`.
 7. Jalankan `npx prisma generate` dan `npx prisma migrate deploy` di `be`.
 8. Jalankan seed hanya jika database baru.
@@ -395,13 +358,12 @@ GET /api/reports/sales?startDate=2026-01-01&endDate=2026-12-31
 
 ## Catatan Keamanan
 
-- Jangan commit `.env`.
-- Ganti `JWT_SECRET` sebelum deploy.
+- Jangan commit konfigurasi runtime, kredensial database, kredensial email, atau payment key ke repository public.
 - Jangan pakai Mailtrap sandbox untuk production.
 - Jangan simpan password SMTP di database.
 - Gunakan HTTPS di VPS.
 - Restrict CORS ke domain frontend production.
-- Rotasi Midtrans key jika pernah tersebar.
+- Rotasi payment key jika pernah tersebar.
 
 ## Saran Lanjutan
 
@@ -412,5 +374,4 @@ GET /api/reports/sales?startDate=2026-01-01&endDate=2026-12-31
 - Tambah retry/check payment status otomatis.
 - Tambah integrasi upload gambar menu ke backend, bukan base64.
 - Tambah test otomatis untuk validator phone, webhook signature, dan status transition.
-- Tambah `.env.example` untuk VPS.
 - Bersihkan data QA/pending payment sebelum production.

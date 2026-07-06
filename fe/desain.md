@@ -251,10 +251,10 @@ Spacious:    24-32px
 4. **Review** - Click "Bayar" to see cart review
 5. **Note** - Add notes per item if needed
 6. **Checkout** - Review total and confirm
-7. **Pay** - Proceed to QRIS payment (placeholder)
+7. **Pay** - Proceed to Midtrans Snap sandbox payment
 
 ### Admin Flow
-1. **Login** - Enter credentials
+1. **Login** - Authenticate through backend API
 2. **Navigate** - Choose Dashboard/Menu/Report
 3. **Manage** - Add/Edit/Delete menus
 4. **Monitor** - View statistics and orders
