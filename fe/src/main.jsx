@@ -707,15 +707,19 @@ function App() {
   const [pendingPayment, setPendingPayment] = useState(null);
 
   useEffect(() => {
-    fetch('/api/menus')
-      .then((res) => res.json())
-      .then((result) => {
-        if (result.success && Array.isArray(result.data)) setMenus(transformApiMenus(result.data));
-      })
-      .catch(() => {});
+    const loadMenus = () => {
+      fetch('/api/menus')
+        .then((res) => res.json())
+     .then((result) => {
+          if (result.success && Array.isArray(result.data)) setMenus(transformApiMenus(result.data));
+   })
+        .catch(() => {});
+    };
+
+    loadMenus();
 
     return undefined;
-  }, []);
+  }, [page]);
 
   const getStock = useCallback((id) => {
     for (const cat of menus) {
@@ -727,11 +731,21 @@ function App() {
 
   const addToCart = useCallback((item) => {
     const stock = getStock(item.id);
-    if (stock <= 0) return;
-    setCart((c) => {
+  if (stock <= 0) return;
+ setCart((c) => {
       const ex = c.find((x) => x.id === item.id);
       if (ex && ex.qty >= stock) return c;
-      return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...c, { ...item, qty: 1, note: '' }];
+return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...c, { 
+        id: item.id,
+        name: item.name,
+        price: item.price,
+    discountPercent: item.discountPercent,
+     image: item.image,
+        description: item.description,
+        stock: item.stock,
+        qty: 1, 
+     note: '' 
+      }];
     });
   }, [getStock]);
 

@@ -449,6 +449,7 @@ function OrderManager() {
   const [expanded, setExpanded] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [checklistStates, setChecklistStates] = useState({});
 
   const loadOrders = async () => {
     setLoading(true);
@@ -479,22 +480,26 @@ function OrderManager() {
   }
 
   function buildSellerChecklist(order) {
+    const state = checklistStates[order.id] || {};
     return [
       'DAPUR - KEMAS',
       'CHECKLIST PESANAN PENJUAL',
       `No. Pesanan: ${order.orderNumber}`,
-      `Tanggal: ${formatDate(order.createdAt)}`,
+    `Tanggal: ${formatDate(order.createdAt)}`,
       `Pelanggan: ${order.customerName}`,
       `Telepon: ${order.customerPhone}`,
       `Alamat: ${order.customerAddress}`,
       '',
       'CEK ITEM',
-      ...(order.items || []).map((item) => `[ ] ${item.quantity}x ${item.menuName}${item.notes ? ` - Catatan: ${item.notes}` : ''}`),
+      ...(order.items || []).map((item) => {
+        const checked = state[`item-${item.id}`] ? '[✓]' : '[ ]';
+        return `${checked} ${item.quantity}x ${item.menuName}${item.notes ? ` - Catatan: ${item.notes}` : ''}`;
+      }),
       '',
-      'CEK 1 - Picking: [ ] Lengkap [ ] Kurang',
-      'Petugas 1: ____________________',
+      `CEK 1 - Picking: ${state['check1'] ? '[✓]' : '[ ]'} Lengkap  ${!state['check1'] && state['check1'] !== undefined ? '[✓]' : '[ ]'} Kurang`,
+    'Petugas 1: ____________________',
       '',
-      'CEK 2 - Packing: [ ] Lengkap [ ] Kurang',
+      `CEK 2 - Packing: ${state['check2'] ? '[✓]' : '[ ]'} Lengkap  ${!state['check2'] && state['check2'] !== undefined ? '[✓]' : '[ ]'} Kurang`,
       'Petugas 2: ____________________',
       '',
       'Catatan: _______________________',
@@ -517,7 +522,7 @@ function OrderManager() {
     const lines = buildSellerChecklist(order).split('\n');
     const win = window.open('', '_blank');
     if (!win) return;
-    win.document.write(`<!doctype html><html><head><title>Checklist ${order.orderNumber}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111827}h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:0 0 18px;color:#475569}.line{padding:4px 0;font-size:13px;white-space:pre-wrap}.item{font-size:15px;padding:8px 0;border-bottom:1px dashed #CBD5E1}.sign{margin-top:14px;padding-top:8px}</style></head><body><h1>DAPUR - KEMAS</h1><h2>Checklist Pesanan Penjual</h2>${lines.slice(2).map((line) => `<div class="${line.startsWith('[ ]') ? 'item' : line.startsWith('Petugas') || line.startsWith('CEK') ? 'line sign' : 'line'}">${line.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('')}<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}</script></body></html>`);
+    win.document.write(`<!doctype html><html><head><title>Checklist ${order.orderNumber}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111827}h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:0 0 18px;color:#475569}.line{padding:4px 0;font-size:13px;white-space:pre-wrap}.item{font-size:15px;padding:8px 0;border-bottom:1px dashed #CBD5E1}.sign{margin-top:14px;padding-top:8px}</style></head><body><h1>DAPUR - KEMAS</h1><h2>Checklist Pesanan Penjual</h2>${lines.slice(2).map((line) => `<div class="${line.startsWith('[✓]') || line.startsWith('[ ]') ? 'item' : line.startsWith('Petugas') || line.startsWith('CEK') ? 'line sign' : 'line'}">${line.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('')}<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}</script></body></html>`);
     win.document.close();
   }
 
@@ -583,21 +588,61 @@ function OrderManager() {
                     {order.items?.map((item) => <span key={item.id}>{item.quantity}x {item.menuName} - {money(Number(item.subtotal))}</span>)}
                   </div>
 
-                  <div className="dk-seller-checklist">
-                    <strong>Checklist Penjual</strong>
-                    <div className="dk-seller-checklist-items">
-                      {order.items?.map((item) => (
-                        <label key={item.id} className="dk-seller-checkline">
-                          <input type="checkbox" />
-                          <span>{item.quantity}x {item.menuName}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <div className="dk-seller-checks">
-                      <label><input type="checkbox" /> Cek 1 lengkap</label>
-                      <label><input type="checkbox" /> Cek 2 packing lengkap</label>
-                    </div>
-                  </div>
+     <div className="dk-seller-checklist">
+              <strong>Checklist Penjual</strong>
+             <div className="dk-seller-checklist-items">
+{order.items?.map((item) => (
+ <label key={item.id} className="dk-seller-checkline">
+ <input 
+          type="checkbox" 
+   checked={!!(checklistStates[order.id]?.[`item-${item.id}`])}
+       onChange={(e) => {
+  setChecklistStates(prev => ({
+    ...prev,
+               [order.id]: {
+             ...prev[order.id],
+         [`item-${item.id}`]: e.target.checked
+    }
+   }));
+                 }}
+       />
+                   <span>{item.quantity}x {item.menuName}</span>
+         </label>
+            ))}
+  </div>
+     <div className="dk-seller-checks">
+      <label>
+  <input 
+      type="checkbox" 
+    checked={!!(checklistStates[order.id]?.['check1'])}
+          onChange={(e) => {
+            setChecklistStates(prev => ({
+           ...prev,
+              [order.id]: {
+          ...prev[order.id],
+   check1: e.target.checked
+        }
+       }));
+    }}
+              /> Cek 1 lengkap
+        </label>
+         <label>
+<input 
+     type="checkbox" 
+           checked={!!(checklistStates[order.id]?.['check2'])}
+           onChange={(e) => {
+      setChecklistStates(prev => ({
+   ...prev,
+[order.id]: {
+              ...prev[order.id],
+ check2: e.target.checked
+    }
+       }));
+              }}
+  /> Cek 2 packing lengkap
+   </label>
+        </div>
+</div>
 
                   <div className="dk-admin-actions dk-admin-order-actions">
                     <button className="dk-btn-outline" onClick={() => printSellerChecklist(order)}>Cetak Checklist</button>
@@ -631,18 +676,28 @@ function MenuForm({ initial, categories, onSave, onCancel }) {
   const [discountEnabled, setDiscountEnabled] = useState(!!(initial?.discountPercent));
   const isEdit = !!initial;
 
-  const submit = (e) => {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e) => {
     e.preventDefault();
-    const discount = discountEnabled ? Number(form.discountPercent) || 0 : null;
-    onSave({
-      id: initial?.id || newId(),
-      name: form.name,
-      price: Number(form.price) || 0,
-      discountPercent: discount,
-      stock: Number(form.stock) || 0,
-      description: form.description,
+    setSaving(true);
+    setError('');
+    try {
+      const discount = discountEnabled ? Number(form.discountPercent) || 0 : null;
+      await onSave({
+        id: initial?.id || newId(),
+        name: form.name,
+        price: Number(form.price) || 0,
+        discountPercent: discount,
+        stock: Number(form.stock) || 0,
+        description: form.description,
       image: form.image,
-    }, form.category);
+      }, form.category);
+    } catch (err) {
+      setError(err.message || 'Gagal menyimpan menu');
+      setSaving(false);
+    }
   };
 
   return (
@@ -700,10 +755,11 @@ function MenuForm({ initial, categories, onSave, onCancel }) {
               <img src={getMenuImage(key)} alt="" onError={(e) => { e.target.src = FALLBACK_IMG; }} />
             </button>
           ))}
-        </div>
+  </div>
+        {error && <div className="dk-form-error">{error}</div>}
         <div className="dk-form-actions">
-          <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
-          <button type="submit" className="dk-btn-save">{isEdit ? 'Simpan' : 'Tambah'}</button>
+        <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
+     <button type="submit" className="dk-btn-save" disabled={saving}>{saving ? 'Menyimpan...' : (isEdit ? 'Simpan' : 'Tambah')}</button>
         </div>
       </form>
     </div>
@@ -1006,10 +1062,7 @@ function AdminDashboard({ onLogout, onSettings }) {
     eventSource.onerror = (error) => {
       console.error('SSE connection error:', error);
       eventSource.close();
-      // Reconnect after 5 seconds
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
+      // Don't reload page - just log the error and let the cleanup handle reconnection
     };
 
     return () => {
