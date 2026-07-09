@@ -1,18 +1,14 @@
 name: Auto Deploy to VPS Nginx
-
 on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
       - name: Executing remote ssh commands
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -21,24 +17,18 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-            # 1. Daftarkan kunci SSH github actions ke SSH agent VPS secara otomatis saat script berjalan
+            set -e
+
             eval "$(ssh-agent -s)"
             ssh-add ~/.ssh/id_github_actions
-            
-            # 2. Masuk ke folder proyek dan tarik kode terbaru
+
             cd /var/www/html/d-k
-            git pull origin main
-            
-            # 3. Otomatisasi Frontend (Vite) - Lakukan install dan build jika ada perubahan
+            git fetch origin main
+            git reset --hard origin/main
+
             cd fe
             npm install
             npm run build
-            
-            # 4. Otomatisasi Backend (Node.js) - Install dependensi dan restart service backend kamu
+
             cd ../be
             npm install
-            # Jika kamu menggunakan Prisma DB, jalankan ini jika ada migrasi:
-            # npx prisma migrate deploy
-            
-            # Restart aplikasi backend (Misal kamu menggunakan PM2 agar server Node.js jalan terus di background)
-            # pm2 restart nama-aplikasi-kamu || pm2 start app.js --name "nama-aplikasi-kamu"
