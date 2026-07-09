@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getMenuImage, FALLBACK_IMG, money, formatDate, todayStr, IMAGE_KEYS, resizeImage } from './data.js';
+import { getMenuImage, FALLBACK_IMG, money, formatDate, todayStr, IMAGE_KEYS } from './data.js';
 import jsPDF from 'jspdf';
 import './styles.css';
 
@@ -29,6 +29,256 @@ async function apiCall(endpoint, options = {}) {
   }
 
   return data;
+}
+
+async function uploadMenuImage(file) {
+  const token = sessionStorage.getItem('dk_admin_token');
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch(`${API_BASE_URL}/menus/upload`, {
+    method: 'POST',
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: formData,
+  });
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.message || 'Gagal mengupload gambar');
+  }
+
+  return data.data.imageUrl;
+}
+
+function safeFilePart(value) {
+  return String(value || 'dokumen').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase();
+}
+
+function printPdfDoc(doc) {
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (win) {
+    win.onload = () => {
+      win.focus();
+      win.print();
+    };
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return;
+  }
+  URL.revokeObjectURL(url);
+  doc.save('dokumen.pdf');
+}
+
+function ensurePdfSpace(doc, y, needed = 12) {
+  if (y + needed <= 282) return y;
+  doc.addPage();
+  return 18;
+}
+
+function drawPdfHeader(doc, title, periodLabel) {
+  doc.setDrawColor(30, 64, 175);
+  doc.setFillColor(239, 246, 255);
+  doc.rect(14, 12, 182, 26, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(30, 41, 59);
+  doc.text('DAPUR - KEMAS', 20, 23);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Aplikasi Pemesanan Makanan', 20, 30);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(30, 41, 59);
+  doc.text(title, 190, 23, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(periodLabel, 190, 30, { align: 'right' });
+  doc.setTextColor(30, 41, 59);
+  return 48;
+}
+
+function drawPdfFooter(doc) {
+  const pages = doc.getNumberOfPages();
+  for (let page = 1; page <= pages; page += 1) {
+    doc.setPage(page);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, 286, 196, 286);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 14, 291);
+    doc.text(`Halaman ${page}/${pages}`, 196, 291, { align: 'right' });
+  }
+  doc.setTextColor(30, 41, 59);
+}
+
+function buildSellerChecklistPdf(order, state = {}) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  let y = drawPdfHeader(doc, 'CHECKLIST PESANAN PENJUAL', `No. ${order.orderNumber}`);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Informasi Pesanan', 14, y);
+  y += 7;
+  doc.setFont('helvetica', 'normal');
+  [
+    ['No. Pesanan', order.orderNumber],
+    ['Tanggal', formatDate(order.createdAt)],
+    ['Pelanggan', order.customerName],
+    ['Telepon', order.customerPhone],
+  ].forEach(([label, value]) => {
+    doc.text(`${label}:`, 14, y);
+    doc.text(String(value || '-'), 46, y);
+    y += 6;
+  });
+
+  const addressLines = doc.splitTextToSize(String(order.customerAddress || '-'), 145);
+  doc.text('Alamat:', 14, y);
+  doc.text(addressLines, 46, y);
+  y += Math.max(6, addressLines.length * 5) + 6;
+
+  y = ensurePdfSpace(doc, y, 18);
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.rect(14, y, 182, 8, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('Cek', 18, y + 5.5);
+  doc.text('Qty', 34, y + 5.5);
+  doc.text('Menu', 50, y + 5.5);
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  (order.items || []).forEach((item) => {
+    const lines = doc.splitTextToSize(item.menuName || '-', 130);
+    const rowHeight = Math.max(9, lines.length * 5 + 4);
+    y = ensurePdfSpace(doc, y, rowHeight);
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(18, y + 2, 4, 4);
+    if (state[`item-${item.id}`]) {
+      doc.line(18.8, y + 4, 20, y + 5.2);
+      doc.line(20, y + 5.2, 22, y + 2.8);
+    }
+    doc.text(String(item.quantity || 0), 35, y + 5.5);
+    doc.text(lines, 50, y + 5.5);
+    doc.line(14, y + rowHeight, 196, y + rowHeight);
+    y += rowHeight;
+  });
+
+  y += 8;
+  y = ensurePdfSpace(doc, y, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Validasi Penjual', 14, y);
+  y += 8;
+  [
+    ['Cek 1 - Picking lengkap', state.check1],
+    ['Cek 2 - Packing lengkap', state.check2],
+  ].forEach(([label, checked], index) => {
+    doc.setFont('helvetica', 'normal');
+    doc.rect(18, y - 3.5, 4, 4);
+    if (checked) {
+      doc.line(18.8, y - 1.5, 20, y - 0.3);
+      doc.line(20, y - 0.3, 22, y - 2.7);
+    }
+    doc.text(label, 26, y);
+    doc.text(`Petugas ${index + 1}: ____________________`, 118, y);
+    y += 9;
+  });
+  y += 5;
+  doc.text('Catatan: ______________________________________________________', 14, y);
+
+  drawPdfFooter(doc);
+  return doc;
+}
+
+function buildReportPdf({ title, periodLabel, orders, topItems, total }) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  let y = drawPdfHeader(doc, `LAPORAN ${title.toUpperCase()}`, periodLabel);
+  const itemCount = orders.reduce((sum, order) => sum + order.items.reduce((sub, item) => sub + item.qty, 0), 0);
+  const avg = orders.length ? Math.round(total / orders.length) : 0;
+
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.rect(14, y, 182, 24, 'FD');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Jumlah Pesanan', 20, y + 7);
+  doc.text('Total Pendapatan', 66, y + 7);
+  doc.text('Rata-rata / Pesanan', 116, y + 7);
+  doc.text('Item Terjual', 166, y + 7);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(30, 41, 59);
+  doc.text(String(orders.length), 20, y + 16);
+  doc.text(money(total), 66, y + 16);
+  doc.text(avg ? money(avg) : '-', 116, y + 16);
+  doc.text(String(itemCount), 166, y + 16);
+  y += 36;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Item Terlaris', 14, y);
+  y += 7;
+  if (topItems.length) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    topItems.forEach(([name, qty], index) => {
+      y = ensurePdfSpace(doc, y, 7);
+      doc.text(`${index + 1}. ${name}`, 16, y);
+      doc.text(`${qty} pcs`, 190, y, { align: 'right' });
+      y += 6;
+    });
+  } else {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Tidak ada data pada periode ini.', 16, y);
+    y += 6;
+  }
+
+  y += 8;
+  y = ensurePdfSpace(doc, y, 18);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Detail Pesanan', 14, y);
+  y += 6;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.rect(14, y, 182, 8, 'FD');
+  doc.setFontSize(9);
+  doc.text('No. Order', 18, y + 5.5);
+  doc.text('Tanggal', 70, y + 5.5);
+  doc.text('Item', 120, y + 5.5);
+  doc.text('Total', 190, y + 5.5, { align: 'right' });
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  orders.forEach((order) => {
+    y = ensurePdfSpace(doc, y, 8);
+    doc.text(String(order.id), 18, y + 5);
+    doc.text(formatDate(order.date), 70, y + 5);
+    doc.text(`${order.items.reduce((sum, item) => sum + item.qty, 0)} item`, 120, y + 5);
+    doc.text(money(order.total), 190, y + 5, { align: 'right' });
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, y + 8, 196, y + 8);
+    y += 8;
+  });
+
+  if (!orders.length) {
+    doc.text('Tidak ada pesanan pada periode ini.', 18, y + 5);
+    y += 8;
+  }
+
+  y = ensurePdfSpace(doc, y + 4, 10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TOTAL PENDAPATAN', 120, y + 5);
+  doc.text(money(total), 190, y + 5, { align: 'right' });
+  drawPdfFooter(doc);
+  return doc;
 }
 
 /* ── Login Page ── */
@@ -508,6 +758,10 @@ function OrderManager() {
   }
 
   function saveSellerChecklist(order) {
+    const checklistPdf = buildSellerChecklistPdf(order, checklistStates[order.id] || {});
+    checklistPdf.save(`checklist-${safeFilePart(order.orderNumber)}.pdf`);
+    return;
+
     const doc = new jsPDF();
 const state = checklistStates[order.id] || {};
     
@@ -558,6 +812,10 @@ doc.save(`checklist-${order.orderNumber}.pdf`);
   }
 
   function printSellerChecklist(order) {
+    const checklistPdf = buildSellerChecklistPdf(order, checklistStates[order.id] || {});
+    printPdfDoc(checklistPdf);
+    return;
+
     const lines = buildSellerChecklist(order).split('\n');
     const win = window.open('', '_blank');
     if (!win) return;
@@ -684,8 +942,8 @@ doc.save(`checklist-${order.orderNumber}.pdf`);
 </div>
 
                   <div className="dk-admin-actions dk-admin-order-actions">
-                    <button className="dk-btn-outline" onClick={() => printSellerChecklist(order)}>Cetak Checklist</button>
-                    <button className="dk-btn-outline" onClick={() => saveSellerChecklist(order)}>Simpan Checklist</button>
+                    <button className="dk-btn-outline" onClick={() => printSellerChecklist(order)}>Cetak PDF</button>
+                    <button className="dk-btn-outline" onClick={() => saveSellerChecklist(order)}>Simpan PDF</button>
                     {(nextActions[order.orderStatus] || []).map(([status, label]) => (
                       <button key={status} className="dk-btn-edit" onClick={() => updateStatus(order, status)}>{label}</button>
                     ))}
@@ -702,7 +960,7 @@ doc.save(`checklist-${order.orderNumber}.pdf`);
 }
 
 /* ── Menu Form ── */
-function MenuForm({ initial, categories, onSave, onCancel }) {
+function MenuForm({ initial, categories, onSave, onCancel, onUploadImage }) {
   const [form, setForm] = useState({
     name: initial?.name || '',
     price: initial?.price || '',
@@ -716,6 +974,7 @@ function MenuForm({ initial, categories, onSave, onCancel }) {
   const isEdit = !!initial;
 
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   const submit = async (e) => {
@@ -776,16 +1035,25 @@ function MenuForm({ initial, categories, onSave, onCancel }) {
         <div className="dk-upload-row">
           <label className="dk-upload-btn">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V10M4 7L8 3L12 7M2 13H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Upload Foto
+            {uploading ? 'Mengupload...' : 'Upload Foto'}
             <input type="file" accept="image/*" onChange={async (e) => {
               const file = e.target.files?.[0];
               if (file) {
-                const dataUrl = await resizeImage(file);
-                setForm({ ...form, image: dataUrl });
+                setUploading(true);
+                setError('');
+                try {
+                  const imageUrl = await onUploadImage(file);
+                  setForm((prev) => ({ ...prev, image: imageUrl }));
+                } catch (err) {
+                  setError(err.message || 'Gagal mengupload gambar');
+                } finally {
+                  setUploading(false);
+                  e.target.value = '';
+                }
               }
-            }} hidden />
+            }} disabled={uploading} hidden />
           </label>
-          {form.image && (form.image.startsWith('data:') || form.image.startsWith('http')) && (
+          {form.image && (form.image.startsWith('data:') || form.image.startsWith('http') || form.image.startsWith('/')) && (
             <div className="dk-upload-preview">
               <img src={form.image} alt="" onError={(e) => { e.target.src = FALLBACK_IMG; }} />
             </div>
@@ -802,7 +1070,7 @@ function MenuForm({ initial, categories, onSave, onCancel }) {
         {error && <div className="dk-form-error">{error}</div>}
         <div className="dk-form-actions">
         <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
-     <button type="submit" className="dk-btn-save" disabled={saving}>{saving ? 'Menyimpan...' : (isEdit ? 'Simpan' : 'Tambah')}</button>
+     <button type="submit" className="dk-btn-save" disabled={saving || uploading}>{saving ? 'Menyimpan...' : (isEdit ? 'Simpan' : 'Tambah')}</button>
         </div>
       </form>
     </div>
@@ -1007,8 +1275,6 @@ function AdminDashboard({ onLogout, onSettings }) {
   const [editingCat, setEditingCat] = useState(null);
   const [reportDate, setReportDate] = useState(todayStr());
   const [reportPeriod, setReportPeriod] = useState('daily');
-  const [reportStartDate, setReportStartDate] = useState(todayStr());
-  const [reportEndDate, setReportEndDate] = useState(todayStr());
   const [orderSearch, setOrderSearch] = useState('');
 
   const mapMenusFromApi = (list, categoryList = categories) => {
@@ -1140,11 +1406,28 @@ function AdminDashboard({ onLogout, onSettings }) {
     return { start, end };
   }
 
+  function getYearRange(dateStr) {
+    const year = new Date(dateStr).getFullYear();
+    return { start: `${year}-01-01`, end: `${year}-12-31` };
+  }
+
   function getReportRange() {
     if (reportPeriod === 'daily') return { start: reportDate, end: reportDate };
     if (reportPeriod === 'weekly') return getWeekRange(reportDate);
     if (reportPeriod === 'monthly') return getMonthRange(reportDate);
-    return { start: reportStartDate, end: reportEndDate };
+    return getYearRange(reportDate);
+  }
+
+  function getReportPeriodLabel() {
+    if (reportPeriod === 'daily') return formatDate(reportDate);
+    if (reportPeriod === 'weekly') {
+      const { start, end } = getWeekRange(reportDate);
+      return `${formatDate(start)} - ${formatDate(end)}`;
+    }
+    if (reportPeriod === 'monthly') {
+      return new Date(reportDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
+    }
+    return String(new Date(reportDate).getFullYear());
   }
 
   useEffect(() => {
@@ -1163,7 +1446,7 @@ function AdminDashboard({ onLogout, onSettings }) {
         setReportOrders(mapped);
       })
       .catch(() => setReportOrders([]));
-  }, [reportPeriod, reportDate, reportStartDate, reportEndDate]);
+  }, [reportPeriod, reportDate]);
 
   let filteredOrders;
   let reportTitle;
@@ -1181,7 +1464,7 @@ function AdminDashboard({ onLogout, onSettings }) {
     reportTitle = 'Bulanan';
   } else {
     filteredOrders = reportOrders;
-    reportTitle = 'Rentang Tanggal';
+    reportTitle = 'Tahunan';
   }
 
   if (orderSearch.trim()) {
@@ -1252,40 +1535,21 @@ function AdminDashboard({ onLogout, onSettings }) {
     await loadMenus(next);
   };
 
-  const handlePrint = () => window.print();
+  const createCurrentReportPdf = () => buildReportPdf({
+    title: reportTitle,
+    periodLabel: getReportPeriodLabel(),
+    orders: filteredOrders,
+    topItems: sortedReportItems,
+    total: reportTotal,
+  });
 
   const handleDownloadPDF = () => {
-    const reportContent = document.getElementById('printable-report');
-    if (!reportContent) return;
+    const { start, end } = getReportRange();
+    createCurrentReportPdf().save(`laporan-${reportPeriod}-${start}-sampai-${end}.pdf`);
+  };
 
-    const printWindow = window.open('', '_blank');
-    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-      .map(el => el.outerHTML)
-      .join('');
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Laporan ${reportTitle} - Dapur Kemas</title>
-          ${styles}
-          <style>
-            body { padding: 20px; }
-            .no-print { display: none !important; }
-          </style>
-        </head>
-        <body>
-          ${reportContent.innerHTML}
-          <script>
-            window.onload = () => {
-              window.print();
-              setTimeout(() => window.close(), 500);
-            };
-          <\/script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+  const handlePrint = () => {
+    printPdfDoc(createCurrentReportPdf());
   };
 
   return (
@@ -1380,29 +1644,30 @@ function AdminDashboard({ onLogout, onSettings }) {
           <div className="dk-admin-content">
             {/* Toolbar (tidak ikut cetak) */}
             <div className="dk-report-toolbar dk-report-control-panel no-print">
-              <div className="dk-period-selector dk-report-periods">
-                <button className={`dk-period-btn ${reportPeriod === 'daily' ? 'active' : ''}`} onClick={() => setReportPeriod('daily')}>Harian</button>
-                <button className={`dk-period-btn ${reportPeriod === 'weekly' ? 'active' : ''}`} onClick={() => setReportPeriod('weekly')}>Mingguan</button>
-                <button className={`dk-period-btn ${reportPeriod === 'monthly' ? 'active' : ''}`} onClick={() => setReportPeriod('monthly')}>Bulanan</button>
-                <button className={`dk-period-btn ${reportPeriod === 'range' ? 'active' : ''}`} onClick={() => setReportPeriod('range')}>Rentang Tanggal</button>
+              <div className="dk-report-filter-group">
+                <label className="dk-report-filter-label" htmlFor="report-period">Periode</label>
+                <select
+                  id="report-period"
+                  className="dk-report-select"
+                  value={reportPeriod}
+                  onChange={(e) => setReportPeriod(e.target.value)}
+                >
+                  <option value="daily">Harian</option>
+                  <option value="weekly">Mingguan</option>
+                  <option value="monthly">Bulanan</option>
+                  <option value="yearly">Tahunan</option>
+                </select>
               </div>
               <div className="dk-report-toolbar-actions">
-                {reportPeriod === 'range' ? (
-                  <div className="dk-report-date-range">
-                    <input type="date" value={reportStartDate} onChange={(e) => setReportStartDate(e.target.value)} className="dk-date-input" />
-                    <input type="date" value={reportEndDate} onChange={(e) => setReportEndDate(e.target.value)} className="dk-date-input" />
-                  </div>
-                ) : (
-                  <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="dk-date-input" />
-                )}
+                <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="dk-date-input" />
                 <div className="dk-report-action-buttons">
                   <button className="dk-btn-outline" onClick={handlePrint}>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6V2H12V6M4 12H3C2.45 12 2 11.55 2 11V8C2 7.45 2.45 7 3 7H13C13.55 7 14 7.45 14 8V11C14 11.55 13.55 12 13 12H12M4 12H12V14H4V12Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-                    Cetak
+                    Cetak PDF
                   </button>
                   <button className="dk-btn-primary" onClick={handleDownloadPDF}>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V10M4 7L8 11L12 7M2 13H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    PDF
+                    Simpan PDF
                   </button>
                 </div>
               </div>
@@ -1430,7 +1695,7 @@ function AdminDashboard({ onLogout, onSettings }) {
                 </div>
                 <div className="dk-report-doc-title">
                   <strong>LAPORAN {reportTitle.toUpperCase()}</strong>
-                  <span>{reportPeriod === 'daily' ? formatDate(reportDate) : reportPeriod === 'weekly' ? `Minggu ${formatDate(reportDate)}` : reportPeriod === 'monthly' ? new Date(reportDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'long' }) : `${formatDate(reportStartDate)} - ${formatDate(reportEndDate)}`}</span>
+                  <span>{getReportPeriodLabel()}</span>
                 </div>
               </div>
 
@@ -1501,6 +1766,7 @@ function AdminDashboard({ onLogout, onSettings }) {
         <MenuForm
           initial={editingMenu}
           categories={menus}
+          onUploadImage={uploadMenuImage}
           onSave={async (data, catName) => { if (editingMenu) await editMenu(editingMenu.id, data, catName); else await addMenu(data, catName); setShowMenuForm(false); setEditingMenu(null); }}
           onCancel={() => { setShowMenuForm(false); setEditingMenu(null); }}
         />

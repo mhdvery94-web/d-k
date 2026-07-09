@@ -9,6 +9,9 @@
 
 ## 2026-07-09
 
+- [fix] Admin - Tab Pesanan: cetak dan simpan checklist memakai PDF dengan format dokumen seperti laporan
+- [fix] Admin - Tab Kelola Menu: upload foto produk lewat `/api/menus/upload` dan tampilkan gambar `/uploads`
+- [fix] Admin - Tab Laporan: ganti periode ke combo box harian/mingguan/bulanan/tahunan dan cetak/simpan PDF
 - [fix] Admin - Tab Pesanan: ubah simpan checklist dari .txt ke PDF menggunakan jsPDF
 - [fix] Admin - Tab Kelola Menu: tambah fitur hapus kategori menu
 - [fix] Admin - Tambah tombol hapus di form edit kategori

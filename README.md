@@ -6,6 +6,9 @@ Dapur Kemas adalah aplikasi pemesanan makanan berbasis web. Project ini terdiri 
 
 - Frontend pembeli mengambil menu dari database lewat API.
 - Frontend admin mengelola menu dan kategori lewat database, bukan `localStorage`.
+- Admin upload foto produk lewat endpoint `/api/menus/upload`, bukan base64.
+- Admin cetak/simpan checklist pesanan dan laporan penjualan sebagai PDF.
+- Laporan admin memakai combo box periode harian, mingguan, bulanan, dan tahunan.
 - Order dibuat hanya setelah pembayaran sukses/settlement.
 - Pending payment tersimpan di database dan otomatis expired setelah 15 menit.
 - Nomor HP dinormalisasi menjadi format mudah dibaca, contoh `812-3456-7890`.
@@ -258,9 +261,9 @@ Status order:
 3. Admin melihat pesanan masuk.
 4. Admin membuka detail order.
 5. Admin memakai checklist penjual untuk cek item dua kali.
-6. Admin bisa cetak atau simpan checklist penjual.
+6. Admin bisa cetak atau simpan checklist penjual sebagai PDF.
 7. Admin update status order.
-8. Admin melihat laporan berdasarkan harian, mingguan, bulanan, atau rentang tanggal.
+8. Admin melihat laporan berdasarkan harian, mingguan, bulanan, atau tahunan lewat combo box dan bisa cetak/simpan PDF.
 
 ## Payment Midtrans Sandbox
 
@@ -372,6 +375,5 @@ GET /api/reports/sales?startDate=2026-01-01&endDate=2026-12-31
 - Tambah penyimpanan checklist penjual ke database.
 - Tambah page pending payment untuk pembeli.
 - Tambah retry/check payment status otomatis.
-- Tambah integrasi upload gambar menu ke backend, bukan base64.
 - Tambah test otomatis untuk validator phone, webhook signature, dan status transition.
 - Bersihkan data QA/pending payment sebelum production.

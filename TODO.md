@@ -16,7 +16,6 @@
 ## Next Up — Prioritas Tinggi
 
 - [ ] Tambah rate limit login dan OTP
-- [ ] Setup upload gambar menu ke backend (bukan base64)
 - [ ] Setup webhook Midtrans sandbox ke VPS (butuh domain publik / ngrok)
 - [ ] Test full payment settlement end-to-end
 - [ ] Simpan checklist penjual ke database (saat ini belum persisten dari UI)
@@ -26,7 +25,6 @@
 - [ ] Dashboard statistik dari endpoint backend khusus
 - [ ] Pagination order dan menu
 - [ ] Filter order by date/status/search di backend (lebih lengkap)
-- [ ] Export laporan CSV/PDF
 - [ ] Halaman pending payment untuk pembeli
 
 ## Backlog / Prioritas Produksi
@@ -49,6 +47,10 @@
 ---
 
 ## Done
+
+- [x] Fix Admin - Tab Pesanan: samakan format cetak/simpan checklist ke PDF laporan - 2026-07-09
+- [x] Fix Admin - Tab Kelola Menu: upload foto produk sendiri lewat backend - 2026-07-09
+- [x] Fix Admin - Tab Laporan: periode combo box harian/mingguan/bulanan/tahunan dan cetak/simpan PDF - 2026-07-09
 
 - [x] Fix Admin - Tab Pesanan: ubah simpan checklist dari .txt ke PDF — 2026-07-09
 - [x] Fix Admin - Tab Kelola Menu: tambah fitur hapus kategori menu — 2026-07-09

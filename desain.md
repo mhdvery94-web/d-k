@@ -105,9 +105,10 @@ Fitur admin:
 - Update status pesanan.
 - Batalkan pesanan.
 - Checklist penjual untuk pengecekan item dua kali.
-- Cetak checklist.
-- Simpan checklist `.txt`.
-- Laporan harian, mingguan, bulanan, dan rentang tanggal.
+- Cetak checklist sebagai PDF.
+- Simpan checklist sebagai PDF.
+- Laporan harian, mingguan, bulanan, dan tahunan lewat combo box.
+- Cetak dan simpan laporan sebagai PDF.
 
 Checklist penjual:
 
@@ -379,29 +380,26 @@ Konsep deploy VPS:
 1. Checklist penjual belum tersimpan permanen di database dari UI.
 2. Upload gambar admin masih perlu QA endpoint upload.
 3. Payment QRIS sandbox perlu webhook publik VPS/ngrok untuk settlement asli.
-4. Report admin sudah query API, tetapi belum ada export file PDF asli.
-5. Tidak ada automated test.
-6. Data QA/pending payment perlu dibersihkan sebelum production.
-7. Logging masih memakai `console.log`/`console.error`; production sebaiknya pakai logger.
-8. Backend belum punya rate limit auth/payment.
+4. Tidak ada automated test.
+5. Data QA/pending payment perlu dibersihkan sebelum production.
+6. Logging masih memakai `console.log`/`console.error`; production sebaiknya pakai logger.
+7. Backend belum punya rate limit auth/payment.
 
 ## Roadmap Lanjutan
 
 Prioritas tinggi:
 
 1. Tambah rate limit OTP dan login.
-2. Setup upload gambar menu ke backend.
-3. Setup webhook Midtrans sandbox ke VPS.
-4. Test full payment settlement.
-5. Simpan checklist penjual ke database.
+2. Setup webhook Midtrans sandbox ke VPS.
+3. Test full payment settlement.
+4. Simpan checklist penjual ke database.
 
 Prioritas sedang:
 
 1. Tambah dashboard statistik dari endpoint backend khusus.
 2. Tambah pagination order dan menu.
 3. Tambah filter order by date/status/search di backend lebih lengkap.
-4. Tambah export laporan CSV/PDF.
-5. Tambah halaman pending payment pembeli.
+4. Tambah halaman pending payment pembeli.
 
 Prioritas production:
 

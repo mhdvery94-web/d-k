@@ -22,8 +22,9 @@ Frontend Dapur Kemas memakai React + Vite dengan dua entry page: pembeli dan adm
 - Login admin via backend API.
 - Kelola menu dan kategori dari database.
 - Lihat dan update status pesanan.
-- Checklist penjual untuk picking dan packing.
-- Laporan penjualan dari endpoint backend.
+- Upload foto produk sendiri lewat backend.
+- Checklist penjual untuk picking dan packing dengan cetak/simpan PDF.
+- Laporan penjualan dari endpoint backend dengan combo box periode dan cetak/simpan PDF.
 - OTP reset password/lupa username via backend.
 
 ## Struktur

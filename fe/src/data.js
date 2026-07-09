@@ -17,7 +17,7 @@ const FOOD_IMAGES = {
 
 export function getMenuImage(key) {
   if (!key) return FOOD_IMAGES.default;
-  if (key.startsWith('data:') || key.startsWith('http')) return key;
+  if (key.startsWith('data:') || key.startsWith('http') || key.startsWith('/')) return key;
   return FOOD_IMAGES[key] || FOOD_IMAGES.default;
 }
 
