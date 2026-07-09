@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getMenuImage, FALLBACK_IMG, money, formatDate, todayStr, IMAGE_KEYS, resizeImage } from './data.js';
+import jsPDF from 'jspdf';
 import './styles.css';
 
 const ICONS = ['FD','MN','RB','NS','CK','ND','LM','OR','CF','DR','SN','FR','AP','BN','BG','HT','PZ','PA','SL','DS'];
@@ -507,15 +508,53 @@ function OrderManager() {
   }
 
   function saveSellerChecklist(order) {
-    const blob = new Blob([buildSellerChecklist(order)], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `checklist-${order.orderNumber}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    const doc = new jsPDF();
+const state = checklistStates[order.id] || {};
+    
+    // Header
+    doc.setFontSize(16);
+    doc.text('DAPUR - KEMAS', 105, 15, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text('Checklist Pesanan Penjual', 105, 22, { align: 'center' });
+    
+    // Order info
+  let y = 35;
+ doc.setFontSize(10);
+    doc.text(`Order ID: ${order.orderNumber}`, 20, y);
+    y += 7;
+    doc.text(`Nama: ${order.customerName}`, 20, y);
+    y += 7;
+  doc.text(`Tanggal: ${formatDate(order.createdAt)}`, 20, y);
+    y += 10;
+  
+    // Items checklist
+    doc.setFontSize(11);
+  doc.text('CEK 1 - Packing Barang:', 20, y);
+ y += 7;
+    
+    order.items?.forEach((item) => {
+    const checked = state[`item-${item.id}`] ? '[✓]' : '[ ]';
+      doc.setFontSize(10);
+      doc.text(`${checked} ${item.quantity}x ${item.menuName}`, 25, y);
+      y += 6;
+    });
+    
+    y += 5;
+    doc.text('Petugas 1: ____________________', 20, y);
+    y += 10;
+ 
+    // Check 2
+doc.setFontSize(11);
+ const check2Status = state['check2'] ? '[✓] Lengkap  [ ] Kurang' : '[ ] Lengkap  [✓] Kurang';
+    doc.text(`CEK 2 - Packing: ${check2Status}`, 20, y);
+    y += 7;
+    doc.setFontSize(10);
+    doc.text('Petugas 2: ____________________', 20, y);
+    y += 10;
+    
+    doc.text('Catatan: _______________________', 20, y);
+    
+doc.save(`checklist-${order.orderNumber}.pdf`);
   }
 
   function printSellerChecklist(order) {
@@ -685,16 +724,20 @@ function MenuForm({ initial, categories, onSave, onCancel }) {
     setError('');
     try {
       const discount = discountEnabled ? Number(form.discountPercent) || 0 : null;
-      await onSave({
-        id: initial?.id || newId(),
+      const menuData = {
         name: form.name,
         price: Number(form.price) || 0,
         discountPercent: discount,
-        stock: Number(form.stock) || 0,
+  stock: Number(form.stock) || 0,
         description: form.description,
-      image: form.image,
-      }, form.category);
-    } catch (err) {
+        image: form.image,
+ };
+      // Only include id for edit (backend generates ID for new menu)
+    if (initial?.id) {
+        menuData.id = initial.id;
+      }
+ await onSave(menuData, form.category);
+} catch (err) {
       setError(err.message || 'Gagal menyimpan menu');
       setSaving(false);
     }
@@ -767,24 +810,27 @@ function MenuForm({ initial, categories, onSave, onCancel }) {
 }
 
 /* ── Category Form ── */
-function CategoryForm({ initial, onSave, onCancel }) {
+function CategoryForm({ initial, onSave, onCancel, onDelete }) {
   const [form, setForm] = useState(initial || { name: '', icon: 'FD' });
   const submit = (e) => { e.preventDefault(); if (!form.name.trim()) return; onSave({ name: form.name, icon: form.icon }); };
   return (
     <div className="dk-overlay" onClick={onCancel}>
       <form className="dk-admin-form" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <h3>{initial ? 'Edit Kategori' : 'Tambah Kategori'}</h3>
+  <h3>{initial ? 'Edit Kategori' : 'Tambah Kategori'}</h3>
         <label>Nama Kategori</label>
         <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nama kategori" required />
         <label>Icon</label>
         <div className="dk-icon-picker">
           {ICONS.map((icon) => (
-            <button key={icon} type="button" className={`dk-icon-option ${form.icon === icon ? 'dk-icon-selected' : ''}`} onClick={() => setForm({ ...form, icon })}>{icon}</button>
-          ))}
+       <button key={icon} type="button" className={`dk-icon-option ${form.icon === icon ? 'dk-icon-selected' : ''}`} onClick={() => setForm({ ...form, icon })}>{icon}</button>
+        ))}
         </div>
-        <div className="dk-form-actions">
-          <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
-          <button type="submit" className="dk-btn-save">{initial ? 'Simpan' : 'Tambah'}</button>
+  <div className="dk-form-actions">
+        <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
+   <button type="submit" className="dk-btn-save">{initial ? 'Simpan' : 'Tambah'}</button>
+ {initial && onDelete && (
+     <button type="button" className="dk-btn-delete" onClick={() => { if (confirm(`Hapus kategori "${initial.name}"?`)) onDelete(initial.name); }}>Hapus</button>
+   )}
         </div>
       </form>
     </div>
@@ -1192,6 +1238,17 @@ function AdminDashboard({ onLogout, onSettings }) {
     await apiCall(`/categories/${category.id}`, { method: 'PUT', body: JSON.stringify(data) });
     const next = await loadCategories();
     setActiveCat(data.name);
+  await loadMenus(next);
+  };
+
+  const deleteCategory = async (catName) => {
+    const category = categories.find((cat) => cat.name === catName);
+    if (!category) return;
+    await apiCall(`/categories/${category.id}`, { method: 'DELETE' });
+    const next = await loadCategories();
+    if (next.length > 0) {
+      setActiveCat(next[0].name);
+    }
     await loadMenus(next);
   };
 
@@ -1450,10 +1507,11 @@ function AdminDashboard({ onLogout, onSettings }) {
       )}
       {showCatForm && (
         <CategoryForm
-          initial={editingCat}
-          onSave={async (data) => { if (editingCat) await editCategory(editingCat.name, data); else await addCategory(data); setShowCatForm(false); setEditingCat(null); }}
-          onCancel={() => { setShowCatForm(false); setEditingCat(null); }}
-        />
+    initial={editingCat}
+   onSave={async (data) => { if (editingCat) await editCategory(editingCat.name, data); else await addCategory(data); setShowCatForm(false); setEditingCat(null); }}
+    onCancel={() => { setShowCatForm(false); setEditingCat(null); }}
+      onDelete={async (catName) => { await deleteCategory(catName); setShowCatForm(false); setEditingCat(null); }}
+  />
       )}
     </div>
   );

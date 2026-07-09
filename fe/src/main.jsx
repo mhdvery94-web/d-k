@@ -194,29 +194,54 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
     return (
       <div className="dk-overlay" onClick={() => setStep('info')}>
         <div className="dk-review-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="dk-review-header"><h2>Konfirmasi Pembayaran</h2><button className="dk-btn-close" onClick={onClose}>✕</button></div>
-          <div className="dk-review-summary">
-            <div className="dk-review-row"><span>Nama</span><strong>{customerName}</strong></div>
-            <div className="dk-review-row"><span>No. HP</span><strong>+62 {phonePreview.formatted || customerPhone}</strong></div>
-            <div className="dk-review-row"><span>Total Pembayaran</span><strong>{money(total)}</strong></div>
-            <div className="dk-review-row"><span>Metode</span><strong>QRIS</strong></div>
+     <div className="dk-review-header"><h2>Konfirmasi Pembayaran</h2><button className="dk-btn-close" onClick={onClose}>✕</button></div>
+
+          <div className="dk-review-items">
+  {cart.map((c) => {
+            const discounted = getDiscountedPrice(c);
+      return (
+       <div key={c.id} className="dk-review-item">
+       <div className="dk-menu-thumb" style={{ width: '60px', height: '60px', flexShrink: 0 }}>
+    <img src={getMenuImage(c.image)} alt={c.name} onError={(e) => { e.target.src = FALLBACK_IMG; }} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+     </div>
+      <div className="dk-review-info">
+        <strong>{c.name}</strong>
+      <span className="dk-review-meta">{money(discounted)} × {c.qty}</span>
+    {c.note && <span className="dk-review-note" style={{ fontSize: '12px', color: '#64748B' }}>Catatan: {c.note}</span>}
+            </div>
+      <span className="dk-review-item-total">{money(discounted * c.qty)}</span>
+                </div>
+   );
+            })}
           </div>
-          <div className="dk-payment-note">QRIS sandbox Midtrans akan terbuka setelah tombol bayar ditekan.</div>
+
+       <div className="dk-review-bill">
+        <div className="dk-bill-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
+            <div className="dk-bill-row"><span>Biaya Layanan (10%)</span><strong>{money(tax)}</strong></div>
+  <div className="dk-bill-row dk-bill-total"><span>Total</span><strong>{money(total)}</strong></div>
+     </div>
+
+ <div className="dk-review-summary">
+            <div className="dk-review-row"><span>Nama</span><strong>{customerName}</strong></div>
+         <div className="dk-review-row"><span>No. HP</span><strong>+62 {phonePreview.formatted || customerPhone}</strong></div>
+            <div className="dk-review-row"><span>Metode</span><strong>QRIS</strong></div>
+    </div>
+   <div className="dk-payment-note">QRIS sandbox Midtrans akan terbuka setelah tombol bayar ditekan.</div>
           <button className="dk-btn-pay dk-btn-pay-full" disabled={paymentLoading} onClick={async () => {
             setPaymentLoading(true);
-            setFormError('');
-            try {
-              await onCheckout(cart, total, customerInfo);
-              onClose();
-            } catch (error) {
-              setFormError(error.message || 'Gagal membuat pembayaran');
-            } finally {
-              setPaymentLoading(false);
-            }
+     setFormError('');
+       try {
+            await onCheckout(cart, total, customerInfo);
+      onClose();
+       } catch (error) {
+       setFormError(error.message || 'Gagal membuat pembayaran');
+        } finally {
+       setPaymentLoading(false);
+    }
           }}>{paymentLoading ? 'Memproses...' : 'Konfirmasi & Bayar'}</button>
           {formError && <div className="dk-form-error">{formError}</div>}
           <button className="dk-btn-back" onClick={() => setStep('info')}>← Kembali</button>
-        </div>
+  </div>
       </div>
     );
   }
