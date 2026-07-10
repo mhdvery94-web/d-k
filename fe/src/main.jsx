@@ -837,47 +837,45 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
       customerName: customerInfo.customerName || '',
       customerPhone: customerInfo.customerPhone || '',
       customerAddress: customerInfo.customerAddress || '',
-      customerLatitude: customerInfo.latitude || null,
-      customerLongitude: customerInfo.longitude || null,
-      notes: customerInfo.orderNotes || '',
       customerPostalCode: customerInfo.customerPostalCode || '',
       customerKelurahan: customerInfo.customerKelurahan || '',
       customerKecamatan: customerInfo.customerKecamatan || '',
       customerKota: customerInfo.customerKota || '',
       customerProvinsi: customerInfo.customerProvinsi || '',
-      items: cartItems.map((item) => ({ menuId: item.id, quantity: item.qty, notes: item.note || null })),
+      latitude: customerInfo.latitude || null,
+      longitude: customerInfo.longitude || null,
+      items: cartItems.map((item) => ({ menuId: item.id, quantity: item.qty, note: item.note || '' })),
+      orderNotes: customerInfo.orderNotes || '',
     };
 
     try {
-      const response = await fetch('/api/payments/create', {
+      const result = await fetch('/api/payments/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      });
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || 'Gagal membuat pembayaran');
+      }).then((res) => res.json());
 
-      if (!result.data?.sessionToken) {
-        throw new Error('Token pembayaran tidak diterima dari backend.');
+      if (result.success) {
+        setPendingPayment(result.data.sessionToken);
+        setPage('pending');
+
+        window.snap.pay(result.data.snapToken, {
+          // Polling backend menentukan status final; callback ini mencegah Snap memakai finish redirect URL.
+          onSuccess: () => {},
+          onPending: () => {},
+          onError: () => {},
+          onClose: () => {},
+        });
       }
-
-      if (!result.data?.snapToken || !window.snap) {
-        throw new Error('Popup pembayaran Midtrans belum siap. Muat ulang halaman lalu coba lagi.');
-      }
-
-      setPendingPayment(result.data.sessionToken);
-      setPage('pending');
-
-      window.snap.pay(result.data.snapToken, {
-        // Polling backend menentukan status final; callback ini mencegah Snap memakai finish redirect URL.
-        onSuccess: () => {},
-        onPending: () => {},
-        onError: () => {},
-        onClose: () => {},
-      });
     } catch (error) {
       throw error;
     }
+  }, []);
+
+  const handleReceipt = useCallback((order) => {
+    setReceiptData(order);
+    setPendingPayment(null);
+    setPage('receipt');
   }, []);
 
   return (
@@ -891,7 +889,7 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
         <PendingPaymentPage 
           sessionToken={pendingPayment} 
           onMenu={() => { setPendingPayment(null); setPage('menu'); }}
-          onReceipt={(order) => { setReceiptData(order); setPendingPayment(null); setPage('receipt'); }}
+          onReceipt={handleReceipt}
         />
       )}
       {page === 'receipt' && <ReceiptPage data={receiptData} onMenu={() => setPage('menu')} onTracking={() => setPage('tracking')} />}
