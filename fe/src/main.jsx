@@ -318,7 +318,9 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
             const discounted = getDiscountedPrice(c);
             return (
               <div key={c.id} className="dk-review-item">
-                <span className="dk-review-emoji">{String(c.name || '').slice(0, 1).toUpperCase()}</span>
+                <div className="dk-menu-thumb" style={{ width: '60px', height: '60px', flexShrink: 0 }}>
+                  <img src={getMenuImage(c.image)} alt={c.name} onError={(e) => { e.currentTarget.src = FALLBACK_IMG; }} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                </div>
                 <div className="dk-review-info">
                   <strong>{c.name}</strong>
                   <span className="dk-review-meta">{money(discounted)} × {c.qty}</span>
@@ -827,7 +829,13 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
       setPendingPayment(result.data.sessionToken);
       setPage('pending');
 
-      window.snap.pay(result.data.snapToken);
+      window.snap.pay(result.data.snapToken, {
+        // Polling backend menentukan status final; callback ini mencegah Snap memakai finish redirect URL.
+        onSuccess: () => {},
+        onPending: () => {},
+        onError: () => {},
+        onClose: () => {},
+      });
     } catch (error) {
       throw error;
     }
