@@ -732,11 +732,13 @@ function App() {
   const [pendingPayment, setPendingPayment] = useState(null);
 
   useEffect(() => {
+    if (page !== 'menu') return undefined;
+
     const loadMenus = () => {
       fetch('/api/menus')
         .then((res) => res.json())
      .then((result) => {
-          if (result.success && Array.isArray(result.data)) setMenus(transformApiMenus(result.data));
+          if (result.success && Array.isArray(result.data) && result.data.length > 0) setMenus(transformApiMenus(result.data));
    })
         .catch(() => {});
     };
@@ -825,12 +827,7 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
       setPendingPayment(result.data.sessionToken);
       setPage('pending');
 
-      window.snap.pay(result.data.snapToken, {
-        onSuccess: () => setPage('pending'),
-        onPending: () => setPage('pending'),
-        onClose: () => setPage('pending'),
-        onError: () => setPage('pending'),
-      });
+      window.snap.pay(result.data.snapToken);
     } catch (error) {
       throw error;
     }

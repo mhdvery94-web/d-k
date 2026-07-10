@@ -48,6 +48,7 @@
 
 ## Done
 
+- [x] Fix Pembeli - katalog menu tetap tampil setelah pembayaran selesai - 2026-07-10
 - [x] Fix Admin - Tab Pesanan: samakan format cetak/simpan checklist ke PDF laporan - 2026-07-09
 - [x] Fix Admin - Tab Kelola Menu: upload foto produk sendiri lewat backend - 2026-07-09
 - [x] Fix Admin - Tab Laporan: periode combo box harian/mingguan/bulanan/tahunan dan cetak/simpan PDF - 2026-07-09

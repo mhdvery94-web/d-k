@@ -7,6 +7,10 @@
 
 ---
 
+## 2026-07-10
+
+- [fix] Pembeli - cegah callback Midtrans mengembalikan halaman receipt ke state pending tanpa sesi dan pertahankan katalog menu saat kembali setelah pembayaran
+
 ## 2026-07-09
 
 - [fix] Admin - Tab Pesanan: cetak dan simpan checklist memakai PDF dengan format dokumen seperti laporan
