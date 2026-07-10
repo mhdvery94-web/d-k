@@ -9,6 +9,7 @@
 
 ## 2026-07-10
 
+- [fix] Pembeli - ubah simpan resi dari .txt ke PDF menggunakan jsPDF sesuai desain awal
 - [fix] Pembeli - tampilkan foto produk pada ringkasan pesanan dan cegah Snap mengalihkan halaman resi ke finish redirect eksternal setelah pembayaran
 - [fix] Pembeli - cegah callback Midtrans mengembalikan halaman receipt ke state pending tanpa sesi dan pertahankan katalog menu saat kembali setelah pembayaran
 

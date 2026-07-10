@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initialMenus, getMenuImage, FALLBACK_IMG, money, formatDate, validatePhoneInput, formatPhoneDisplay } from './data.js';
+import jsPDF from 'jspdf';
 import './styles.css';
 
 function getDiscountedPrice(item) {
@@ -410,15 +411,53 @@ function ReceiptPage({ data, onMenu, onTracking }) {
   };
 
   const handleSave = () => {
-    const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `struk-${orderNumber}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    const doc = new jsPDF();
+    let y = 20;
+
+    // Header
+    doc.setFontSize(16);
+    doc.text('DAPUR - KEMAS', 105, y, { align: 'center' });
+    y += 8;
+    doc.setFontSize(12);
+    doc.text('STRUK PEMBELI', 105, y, { align: 'center' });
+    y += 10;
+
+    // Order info
+    doc.setFontSize(10);
+  doc.text(`No. Pesanan: ${orderNumber}`, 20, y);
+    y += 7;
+    doc.text('Status: LUNAS', 20, y);
+    y += 10;
+
+// Customer info
+    doc.text(`Nama: ${order.customerName || '-'}`, 20, y);
+    y += 7;
+ doc.text(`Telepon: ${order.customerPhone || '-'}`, 20, y);
+    y += 7;
+    doc.text(`Alamat: ${order.customerAddress || '-'}`, 20, y);
+    y += 10;
+
+    // Items
+    doc.text('ITEM', 20, y);
+  y += 7;
+    items.forEach((item) => {
+      const qty = item.quantity || item.qty || 1;
+      const name = item.menuName || item.name;
+      const sub = Number(item.subtotal || item.price * qty || 0);
+      doc.text(`${qty}x ${name} - ${money(sub)}`, 20, y);
+      y += 7;
+    });
+    y += 3;
+
+    // Totals
+    doc.text(`Subtotal: ${money(Number(order.subtotal || 0))}`, 20, y);
+    y += 7;
+    doc.text(`Biaya Layanan: ${money(Number(order.serviceFee || 0))}`, 20, y);
+    y += 7;
+    doc.setFontSize(12);
+    doc.text(`Total: ${money(Number(order.total || 0))}`, 20, y);
+
+    doc.save(`struk-${orderNumber}.pdf`);
   };
 
   return (

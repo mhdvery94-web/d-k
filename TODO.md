@@ -48,6 +48,7 @@
 
 ## Done
 
+- [x] Fix Pembeli - ubah simpan resi dari .txt ke PDF menggunakan jsPDF - 2026-07-10
 - [x] Fix Pembeli - tampilkan foto menu di ringkasan pesanan dan pertahankan halaman resi setelah pembayaran - 2026-07-10
 - [x] Fix Pembeli - katalog menu tetap tampil setelah pembayaran selesai - 2026-07-10
 - [x] Fix Admin - Tab Pesanan: samakan format cetak/simpan checklist ke PDF laporan - 2026-07-09
