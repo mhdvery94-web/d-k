@@ -80,8 +80,8 @@ Struk pembeli:
 
 - Ditampilkan setelah payment sukses.
 - Memakai layout minimalis berbasis modul sesuai `receipt-desain.md`.
-- Dibagikan sebagai gambar melalui Web Share API, dengan fallback PDF atau teks sesuai dukungan perangkat.
-- Bisa disimpan sebagai PDF visual dengan layout yang sama seperti tampilan halaman.
+- Dibagikan sebagai JPEG melalui Web Share API, dengan fallback pilihan aplikasi atau teks sesuai dukungan perangkat.
+- Bisa disimpan sebagai JPEG terkompresi dengan layout yang sama seperti tampilan halaman.
 
 ## Desain Frontend Admin
 

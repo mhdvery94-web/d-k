@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initialMenus, getMenuImage, FALLBACK_IMG, money, formatDate, validatePhoneInput, formatPhoneDisplay } from './data.js';
-import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import './styles.css';
 
@@ -387,7 +386,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
     const node = printRef.current;
     if (!node) throw new Error('Receipt node belum siap');
 
-    // Pastikan logo sudah termuat sebelum capture supaya tidak kosong di PDF.
+    // Pastikan logo sudah termuat sebelum capture supaya tidak kosong di JPEG.
     const imgs = Array.from(node.querySelectorAll('img'));
     await Promise.all(
       imgs.map((img) =>
@@ -401,21 +400,16 @@ function ReceiptPage({ data, onMenu, onTracking }) {
     );
 
     const canvas = await html2canvas(node, {
-      scale: 2.5,
+      scale: 2,
       backgroundColor: '#ffffff',
       useCORS: true,
       logging: false,
     });
 
-    const imgData = canvas.toDataURL('image/png');
-    const imageBlob = await new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Gagal membuat gambar struk')), 'image/png');
+    const jpegBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Gagal membuat gambar struk')), 'image/jpeg', 0.82);
     });
-    const pageWidth = 100;
-    const pageHeight = (canvas.height * pageWidth) / canvas.width;
-    const doc = new jsPDF({ unit: 'mm', format: [pageWidth, pageHeight] });
-    doc.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-    return { doc, imageBlob, pdfBlob: doc.output('blob') };
+    return { jpegBlob };
   }, [orderNumber]);
 
   useEffect(() => {
@@ -446,10 +440,17 @@ function ReceiptPage({ data, onMenu, onTracking }) {
     if (busy) return;
     setBusy(true);
     try {
-      const { doc } = await getArtifacts();
-      doc.save(`struk-${orderNumber}.pdf`);
+      const { jpegBlob } = await getArtifacts();
+      const url = URL.createObjectURL(jpegBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `struk-${orderNumber}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Gagal membuat struk PDF:', err);
+      console.error('Gagal membuat struk JPEG:', err);
       alert('Gagal membuat struk. Coba lagi.');
     } finally {
       setBusy(false);
@@ -459,9 +460,8 @@ function ReceiptPage({ data, onMenu, onTracking }) {
   const handleShare = async () => {
     if (busy || !artifactsRef.current) return;
     try {
-      const { imageBlob, pdfBlob } = artifactsRef.current;
-      const imageFile = new File([imageBlob], `struk-${orderNumber}.png`, { type: 'image/png' });
-      const pdfFile = new File([pdfBlob], `struk-${orderNumber}.pdf`, { type: 'application/pdf' });
+      const { jpegBlob } = artifactsRef.current;
+      const imageFile = new File([jpegBlob], `struk-${orderNumber}.jpg`, { type: 'image/jpeg' });
 
       if (window.isSecureContext && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [imageFile] })) {
         setBusy(true);
@@ -470,9 +470,6 @@ function ReceiptPage({ data, onMenu, onTracking }) {
           text: shareText,
           files: [imageFile],
         });
-      } else if (window.isSecureContext && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [pdfFile] })) {
-        setBusy(true);
-        await navigator.share({ title: `Resi #${orderNumber}`, text: shareText, files: [pdfFile] });
       } else if (window.isSecureContext && typeof navigator.share === 'function') {
         setBusy(true);
         await navigator.share({ title: `Resi #${orderNumber}`, text: shareText });
@@ -579,7 +576,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
           <button className="dk-receipt-action" onClick={handleShare} disabled={busy || !artifactsReady} aria-label="Bagikan struk">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.1M8.6 13.4l6.8 4.1"/></svg><span>Bagikan</span>
           </button>
-          <button className="dk-receipt-action" onClick={handleSave} disabled={busy} aria-label="Simpan struk PDF">
+          <button className="dk-receipt-action" onClick={handleSave} disabled={busy} aria-label="Simpan struk JPEG">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg><span>Simpan</span>
           </button>
           <button className="dk-receipt-action" onClick={onTracking} aria-label="Cek status pesanan">
@@ -605,7 +602,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
               <button onClick={() => openShareTarget('email')}><strong>@</strong><span>Email</span></button>
               <button onClick={copyReceiptText}><strong>CP</strong><span>Salin</span></button>
             </div>
-            <button className="dk-share-download" onClick={() => { handleSave(); setShareMenuOpen(false); }}>Unduh Struk PDF</button>
+            <button className="dk-share-download" onClick={() => { handleSave(); setShareMenuOpen(false); }}>Unduh Struk JPEG</button>
           </div>
         </div>
       )}
