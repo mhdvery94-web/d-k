@@ -48,6 +48,8 @@
 
 ## Done
 
+- [x] Redesign UI/UX "Teal & Ember" — layout per-halaman (footer 50/50, header 3 kolom, PDF teal) + base warna & bentuk persegi - 2026-07-12
+- [x] Redesign UI/UX (base warna & bentuk) - terapkan palet "Teal & Ember" + bentuk persegi (radius 0) ke seluruh UI pembeli & admin lewat design token bersama di `styles.css` - 2026-07-11
 - [x] Fix Pembeli - tampilkan hanya alamat detail pada struk tanpa mengulang lokasi hasil kode pos - 2026-07-11
 - [x] Fix Pembeli - ganti unduhan dan file share struk dari PDF/PNG besar menjadi JPEG terkompresi - 2026-07-11
 - [x] Fix Pembeli - 3 bug minor struk: tombol ikon sejajar, status LUNAS polos, dan modal fallback share untuk HTTP - 2026-07-11

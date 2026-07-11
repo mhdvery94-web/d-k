@@ -7,8 +7,14 @@
 
 ---
 
+## 2026-07-12
+
+- [fix] Admin (fe) - perbaiki header admin yang patah akibat redesain: ubah dari struktur lama `<div className="dk-brand">` (flex, sudah dihapus dari CSS) ke grid 3 kolom `<span className="dk-brand-icon">` + `<div className="dk-brand-title">` + `<div className="dk-header-actions">` agar konsisten dengan header pembeli; tambah `flex-wrap: wrap; justify-content: flex-end` pada `.dk-header-actions`
+- [feat] Pembeli (fe) - lanjutan redesain "Teal & Ember": header3 kolom (logo-kiri, judul-tengah, aksi-kanan), footer simetris 50/50 di semua step checkout (cart, info pengiriman, konfirmasi bayar) dengan tombol "Kembali" + "Lanjut/Bayar", dan warna PDF laporan admin diubah dari biru ke teal/warm-beige
+
 ## 2026-07-11
 
+- [feat] Pembeli & Admin (fe) - redesain base UI/UX ke identitas "Teal & Ember": ganti palet dari biru ke teal `#2D8B8D` (primer), ember/oranye `#E2571E` untuk badge promo/diskon & highlight, background beige `#F5F5DC` dengan surface cream, dan ubah shape language ke persegi (semua radius token & radius hardcoded jadi 0, kecuali elemen lingkaran fungsional seperti spinner/toggle/step-icon). Diterapkan lewat design token bersama di `styles.css` sehingga ikut ke seluruh halaman pembeli & admin sekaligus; grey struk sengaja dibiarkan netral agar tetap seperti kertas cetak.
 - [fix] Pembeli (fe) - hilangkan duplikasi alamat pada struk dengan menampilkan `customerAddress` hanya sampai sebelum kelurahan; lokasi otomatis kelurahan/kecamatan/kota/provinsi/kode pos tetap ditampilkan pada baris terpisah
 - [fix] Pembeli (fe) - ganti simpan/share struk dari PDF/PNG berukuran sekitar 7 MB menjadi JPEG kualitas 82% dengan capture scale 2 agar file lebih ringan tanpa mengubah layout; hapus jsPDF dari bundle pembeli
 - [fix] Pembeli (fe) - rapikan struk menjadi thermal panjang, sejajarkan tombol Bagikan/Simpan/Status/Ulangi sebagai empat action icon, hilangkan background status LUNAS, dan ganti alert unsupported share pada HTTP dengan modal WhatsApp/Telegram/email/salin/unduh PDF

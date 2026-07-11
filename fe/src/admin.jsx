@@ -79,26 +79,26 @@ function ensurePdfSpace(doc, y, needed = 12) {
 }
 
 function drawPdfHeader(doc, title, periodLabel) {
-  doc.setDrawColor(30, 64, 175);
-  doc.setFillColor(239, 246, 255);
+  doc.setDrawColor(45, 139, 141);
+  doc.setFillColor(228, 241, 240);
   doc.rect(14, 12, 182, 26, 'FD');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
-  doc.setTextColor(30, 41, 59);
+  doc.setTextColor(36, 49, 47);
   doc.text('DAPUR - KEMAS', 20, 23);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(94, 107, 103);
   doc.text('Aplikasi Pemesanan Makanan', 20, 30);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.setTextColor(30, 41, 59);
+  doc.setTextColor(36, 49, 47);
   doc.text(title, 190, 23, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(94, 107, 103);
   doc.text(periodLabel, 190, 30, { align: 'right' });
-  doc.setTextColor(30, 41, 59);
+  doc.setTextColor(36, 49, 47);
   return 48;
 }
 
@@ -106,15 +106,15 @@ function drawPdfFooter(doc) {
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page += 1) {
     doc.setPage(page);
-    doc.setDrawColor(226, 232, 240);
+    doc.setDrawColor(218, 216, 190);
     doc.line(14, 286, 196, 286);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
+    doc.setTextColor(94, 107, 103);
     doc.text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 14, 291);
     doc.text(`Halaman ${page}/${pages}`, 196, 291, { align: 'right' });
   }
-  doc.setTextColor(30, 41, 59);
+  doc.setTextColor(36, 49, 47);
 }
 
 function buildSellerChecklistPdf(order, state = {}) {
@@ -143,8 +143,8 @@ function buildSellerChecklistPdf(order, state = {}) {
   y += Math.max(6, addressLines.length * 5) + 6;
 
   y = ensurePdfSpace(doc, y, 18);
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(203, 213, 225);
+  doc.setFillColor(251, 250, 236);
+  doc.setDrawColor(218, 216, 190);
   doc.rect(14, y, 182, 8, 'FD');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
@@ -158,7 +158,7 @@ function buildSellerChecklistPdf(order, state = {}) {
     const lines = doc.splitTextToSize(item.menuName || '-', 130);
     const rowHeight = Math.max(9, lines.length * 5 + 4);
     y = ensurePdfSpace(doc, y, rowHeight);
-    doc.setDrawColor(226, 232, 240);
+    doc.setDrawColor(218, 216, 190);
     doc.rect(18, y + 2, 4, 4);
     if (state[`item-${item.id}`]) {
       doc.line(18.8, y + 4, 20, y + 5.2);
@@ -202,18 +202,18 @@ function buildReportPdf({ title, periodLabel, orders, topItems, total }) {
   const itemCount = orders.reduce((sum, order) => sum + order.items.reduce((sub, item) => sub + item.qty, 0), 0);
   const avg = orders.length ? Math.round(total / orders.length) : 0;
 
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
+  doc.setFillColor(251, 250, 236);
+  doc.setDrawColor(218, 216, 190);
   doc.rect(14, y, 182, 24, 'FD');
   doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(94, 107, 103);
   doc.text('Jumlah Pesanan', 20, y + 7);
   doc.text('Total Pendapatan', 66, y + 7);
   doc.text('Rata-rata / Pesanan', 116, y + 7);
   doc.text('Item Terjual', 166, y + 7);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.setTextColor(30, 41, 59);
+  doc.setTextColor(36, 49, 47);
   doc.text(String(orders.length), 20, y + 16);
   doc.text(money(total), 66, y + 16);
   doc.text(avg ? money(avg) : '-', 116, y + 16);
@@ -246,8 +246,8 @@ function buildReportPdf({ title, periodLabel, orders, topItems, total }) {
   doc.setFontSize(11);
   doc.text('Detail Pesanan', 14, y);
   y += 6;
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(203, 213, 225);
+  doc.setFillColor(251, 250, 236);
+  doc.setDrawColor(218, 216, 190);
   doc.rect(14, y, 182, 8, 'FD');
   doc.setFontSize(9);
   doc.text('No. Order', 18, y + 5.5);
@@ -263,7 +263,7 @@ function buildReportPdf({ title, periodLabel, orders, topItems, total }) {
     doc.text(formatDate(order.date), 70, y + 5);
     doc.text(`${order.items.reduce((sum, item) => sum + item.qty, 0)} item`, 120, y + 5);
     doc.text(money(order.total), 190, y + 5, { align: 'right' });
-    doc.setDrawColor(226, 232, 240);
+    doc.setDrawColor(218, 216, 190);
     doc.line(14, y + 8, 196, y + 8);
     y += 8;
   });
@@ -651,12 +651,10 @@ function Header({ onLogout, onSettings }) {
   return (
     <header className="dk-header admin-header">
       <div className="dk-header-top">
-        <div className="dk-brand">
-          <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
-          <div>
-            <h1>DAPUR - KEMAS</h1>
-            <p>Panel Admin</p>
-          </div>
+        <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
+        <div className="dk-brand-title">
+          <h1>DAPUR - KEMAS</h1>
+          <p>Panel Admin</p>
         </div>
         <div className="dk-header-actions">
           <button className="dk-btn-nav" onClick={onSettings} title="Pengaturan akun">Akun</button>

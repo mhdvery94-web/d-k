@@ -37,12 +37,10 @@ function Header({ onTracking }) {
   return (
     <header className="dk-header">
       <div className="dk-header-top">
-        <div className="dk-brand">
-          <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
-          <div>
-            <h1>DAPUR - KEMAS</h1>
-            <p>Aplikasi Pemesanan Makanan</p>
-          </div>
+        <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
+        <div className="dk-brand-title">
+          <h1>DAPUR - KEMAS</h1>
+          <p>Aplikasi Pemesanan Makanan</p>
         </div>
         <button className="dk-btn-nav" onClick={onTracking}>Cek Pesanan</button>
       </div>
@@ -203,7 +201,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
       return (
        <div key={c.id} className="dk-review-item">
        <div className="dk-menu-thumb" style={{ width: '60px', height: '60px', flexShrink: 0 }}>
-    <img src={getMenuImage(c.image)} alt={c.name} onError={(e) => { e.target.src = FALLBACK_IMG; }} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+    <img src={getMenuImage(c.image)} alt={c.name} onError={(e) => { e.target.src = FALLBACK_IMG; }} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0' }} />
      </div>
       <div className="dk-review-info">
         <strong>{c.name}</strong>
@@ -227,21 +225,26 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
          <div className="dk-review-row"><span>No. HP</span><strong>+62 {phonePreview.formatted || customerPhone}</strong></div>
             <div className="dk-review-row"><span>Metode</span><strong>QRIS</strong></div>
     </div>
-   <div className="dk-payment-note">QRIS sandbox Midtrans akan terbuka setelah tombol bayar ditekan.</div>
-          <button className="dk-btn-pay dk-btn-pay-full" disabled={paymentLoading} onClick={async () => {
-            setPaymentLoading(true);
-     setFormError('');
-       try {
-            await onCheckout(cart, total, customerInfo);
-      onClose();
-       } catch (error) {
-       setFormError(error.message || 'Gagal membuat pembayaran');
-        } finally {
-       setPaymentLoading(false);
-    }
-          }}>{paymentLoading ? 'Memproses...' : 'Konfirmasi & Bayar'}</button>
+          <div className="dk-payment-note">QRIS sandbox Midtrans akan terbuka setelah tombol bayar ditekan.</div>
           {formError && <div className="dk-form-error">{formError}</div>}
-          <button className="dk-btn-back" onClick={() => setStep('info')}>← Kembali</button>
+          <div className="dk-sheet-footer">
+            <button className="dk-btn-half dk-btn-half-back" onClick={() => setStep('info')}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Kembali
+            </button>
+            <button className="dk-btn-pay" disabled={paymentLoading} onClick={async () => {
+              setPaymentLoading(true);
+              setFormError('');
+              try {
+                await onCheckout(cart, total, customerInfo);
+                onClose();
+              } catch (error) {
+                setFormError(error.message || 'Gagal membuat pembayaran');
+              } finally {
+                setPaymentLoading(false);
+              }
+            }}>{paymentLoading ? 'Memproses...' : 'Konfirmasi & Bayar'}</button>
+          </div>
   </div>
       </div>
     );
@@ -302,8 +305,13 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
 
           {formError && <div className="dk-form-error">{formError}</div>}
 
-          <button className="dk-btn-pay dk-btn-pay-full" onClick={proceedToConfirm}>Lanjut ke Pembayaran</button>
-          <button className="dk-btn-back" onClick={() => setStep('cart')}>← Kembali ke Keranjang</button>
+          <div className="dk-sheet-footer">
+            <button className="dk-btn-half dk-btn-half-back" onClick={() => setStep('cart')}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Kembali
+            </button>
+            <button className="dk-btn-pay" onClick={proceedToConfirm}>Lanjut ke Pembayaran</button>
+          </div>
         </div>
       </div>
     );
@@ -320,7 +328,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
             return (
               <div key={c.id} className="dk-review-item">
                 <div className="dk-menu-thumb" style={{ width: '60px', height: '60px', flexShrink: 0 }}>
-                  <img src={getMenuImage(c.image)} alt={c.name} onError={(e) => { e.currentTarget.src = FALLBACK_IMG; }} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                  <img src={getMenuImage(c.image)} alt={c.name} onError={(e) => { e.currentTarget.src = FALLBACK_IMG; }} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '0' }} />
                 </div>
                 <div className="dk-review-info">
                   <strong>{c.name}</strong>
@@ -342,7 +350,13 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
           <div className="dk-bill-row"><span>Biaya Layanan (10%)</span><strong>{money(tax)}</strong></div>
           <div className="dk-bill-row dk-bill-total"><span>Total</span><strong>{money(total)}</strong></div>
         </div>
-        <button className="dk-btn-pay dk-btn-pay-full" onClick={() => setStep('info')}>Isi Data Pengiriman</button>
+        <div className="dk-sheet-footer">
+          <button className="dk-btn-half dk-btn-half-back" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Kembali
+          </button>
+          <button className="dk-btn-pay" onClick={() => setStep('info')}>Isi Data Pengiriman</button>
+        </div>
       </div>
     </div>
   );
