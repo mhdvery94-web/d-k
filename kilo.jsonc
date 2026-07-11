@@ -1,8 +1,0 @@
-{
-  "$schema": "https://app.kilo.ai/config.json",
-  "instructions": [
-    ".kilocode/rules/project-context.md",
-    ".kilocode/rules/rtk-rules.md"
-  ],
-  "snapshot": false
-}

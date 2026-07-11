@@ -41,3 +41,21 @@ db-backup/*.sql
 # Temporary files
 *.tmp
 *.temp
+
+# Project docs / internal .md (not for public repo)
+CHANGELOG.md
+TODO.md
+SAFEGUARDS.md
+STYLE.md
+database.md
+desain.md
+prompt-fix-bugs.md
+receipt-desain.md
+README.md
+fe/README.md
+fe/desain.md
+
+# AI agent config
+.kilocode/
+.kilo/
+kilo.jsonc
