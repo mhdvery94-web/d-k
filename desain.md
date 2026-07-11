@@ -79,8 +79,9 @@ Nomor HP:
 Struk pembeli:
 
 - Ditampilkan setelah payment sukses.
-- Bisa dibagikan via Web Share API.
-- Bisa disimpan sebagai `.txt`.
+- Memakai layout minimalis berbasis modul sesuai `receipt-desain.md`.
+- Dibagikan sebagai gambar melalui Web Share API, dengan fallback PDF atau teks sesuai dukungan perangkat.
+- Bisa disimpan sebagai PDF visual dengan layout yang sama seperti tampilan halaman.
 
 ## Desain Frontend Admin
 

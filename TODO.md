@@ -48,6 +48,8 @@
 
 ## Done
 
+- [x] Fix Pembeli - share struk lintas aplikasi, PDF visual, dan layout sesuai `receipt-desain.md` - 2026-07-11
+- [x] Fix Pembeli - struk resi: logo icon.png, PDF struk profesional (html2canvas), bagikan resi ke semua aplikasi - 2026-07-10
 - [x] Fix Pembeli - auto-redirect ke receipt setelah payment sukses dengan useCallback - 2026-07-10
 - [x] Fix Pembeli - ubah simpan resi dari .txt ke PDF menggunakan jsPDF - 2026-07-10
 - [x] Fix Pembeli - tampilkan foto menu di ringkasan pesanan dan pertahankan halaman resi setelah pembayaran - 2026-07-10

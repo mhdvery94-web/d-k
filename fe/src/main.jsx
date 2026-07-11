@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initialMenus, getMenuImage, FALLBACK_IMG, money, formatDate, validatePhoneInput, formatPhoneDisplay } from './data.js';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import './styles.css';
 
 function getDiscountedPrice(item) {
@@ -373,106 +374,149 @@ function CartBar({ itemCount, total, onReview }) {
 
 function ReceiptPage({ data, onMenu, onTracking }) {
   const order = data?.order || data;
-  if (!order) return null;
-  const items = order.items || [];
-  const orderNumber = order.orderNumber || order.id;
-  const shareText = `Resi Pesanan Dapur Kemas\n\nNo. Pesanan: ${orderNumber}\nNama: ${order.customerName || '-'}\nTotal: ${money(Number(order.total || 0))}\n\nTerima kasih atas pesanan Anda.`;
-  const receiptText = [
-    'DAPUR - KEMAS',
-    'STRUK PEMBELI',
-    `No. Pesanan: ${orderNumber}`,
-    `Status: LUNAS`,
-    `Nama: ${order.customerName || '-'}`,
-    `Telepon: ${order.customerPhone || '-'}`,
-    `Alamat: ${order.customerAddress || '-'}`,
-    '',
-    'ITEM',
-    ...items.map((item) => {
-      const qty = item.quantity || item.qty || 1;
-      const name = item.menuName || item.name;
-      const sub = Number(item.subtotal || item.price * qty || 0);
-      return `${qty}x ${name} - ${money(sub)}`;
-    }),
-    '',
-    `Subtotal: ${money(Number(order.subtotal || 0))}`,
-    `Biaya Layanan: ${money(Number(order.serviceFee || 0))}`,
-    `Total: ${money(Number(order.total || 0))}`,
-  ].join('\n');
+  const printRef = useRef(null);
+  const artifactsRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [artifactsReady, setArtifactsReady] = useState(false);
+  const items = order?.items || [];
+  const orderNumber = order?.orderNumber || order?.id;
+  const shareText = `Resi Pesanan Dapur Kemas\n\nNo. Pesanan: ${orderNumber}\nNama: ${order?.customerName || '-'}\nTotal: ${money(Number(order?.total || 0))}\n\nTerima kasih atas pesanan Anda.`;
+
+  const buildReceiptArtifacts = useCallback(async () => {
+    const node = printRef.current;
+    if (!node) throw new Error('Receipt node belum siap');
+
+    // Pastikan logo sudah termuat sebelum capture supaya tidak kosong di PDF.
+    const imgs = Array.from(node.querySelectorAll('img'));
+    await Promise.all(
+      imgs.map((img) =>
+        img.complete && img.naturalWidth > 0
+          ? Promise.resolve()
+          : new Promise((resolve) => {
+              img.onload = resolve;
+              img.onerror = resolve;
+            })
+      )
+    );
+
+    const canvas = await html2canvas(node, {
+      scale: 2.5,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const imageBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Gagal membuat gambar struk')), 'image/png');
+    });
+    const pageWidth = 100;
+    const pageHeight = (canvas.height * pageWidth) / canvas.width;
+    const doc = new jsPDF({ unit: 'mm', format: [pageWidth, pageHeight] });
+    doc.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+    return { doc, imageBlob, pdfBlob: doc.output('blob') };
+  }, [orderNumber]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setArtifactsReady(false);
+    artifactsRef.current = null;
+
+    buildReceiptArtifacts()
+      .then((artifacts) => {
+        if (cancelled) return;
+        artifactsRef.current = artifacts;
+        setArtifactsReady(true);
+      })
+      .catch((err) => console.error('Gagal menyiapkan struk:', err));
+
+    return () => { cancelled = true; };
+  }, [buildReceiptArtifacts]);
+
+  const getArtifacts = async () => {
+    if (artifactsRef.current) return artifactsRef.current;
+    const artifacts = await buildReceiptArtifacts();
+    artifactsRef.current = artifacts;
+    setArtifactsReady(true);
+    return artifacts;
+  };
+
+  const handleSave = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { doc } = await getArtifacts();
+      doc.save(`struk-${orderNumber}.pdf`);
+    } catch (err) {
+      console.error('Gagal membuat struk PDF:', err);
+      alert('Gagal membuat struk. Coba lagi.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleShare = async () => {
+    if (busy || !artifactsRef.current) return;
+    setBusy(true);
     try {
-      if (navigator.share) {
+      const { doc, imageBlob, pdfBlob } = artifactsRef.current;
+      const imageFile = new File([imageBlob], `struk-${orderNumber}.png`, { type: 'image/png' });
+      const pdfFile = new File([pdfBlob], `struk-${orderNumber}.pdf`, { type: 'application/pdf' });
+
+      // Gambar diterima lebih banyak aplikasi; PDF tetap dipakai untuk tombol simpan.
+      if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [imageFile] })) {
+        await navigator.share({
+          title: `Resi #${orderNumber}`,
+          text: shareText,
+          files: [imageFile],
+        });
+      } else if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [pdfFile] })) {
+        await navigator.share({ title: `Resi #${orderNumber}`, text: shareText, files: [pdfFile] });
+      } else if (typeof navigator.share === 'function') {
         await navigator.share({ title: `Resi #${orderNumber}`, text: shareText });
       } else {
-        await navigator.clipboard.writeText(shareText);
-        alert('Resi disalin ke clipboard!');
+        doc.save(`struk-${orderNumber}.pdf`);
+        try {
+          await navigator.clipboard?.writeText(shareText);
+          alert('Perangkat ini tidak mendukung berbagi langsung. Struk PDF sudah diunduh dan teks resi disalin ke clipboard.');
+        } catch {
+          alert('Struk PDF sudah diunduh.');
+        }
       }
-    } catch {}
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Gagal membagikan struk:', err);
+        try {
+          await navigator.clipboard?.writeText(shareText);
+          alert('Gagal membagikan struk. Teks resi disalin ke clipboard.');
+        } catch {
+          alert('Gagal membagikan struk. Coba lagi.');
+        }
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleSave = () => {
-    const doc = new jsPDF();
-    let y = 20;
-
-    // Header
-    doc.setFontSize(16);
-    doc.text('DAPUR - KEMAS', 105, y, { align: 'center' });
-    y += 8;
-    doc.setFontSize(12);
-    doc.text('STRUK PEMBELI', 105, y, { align: 'center' });
-    y += 10;
-
-    // Order info
-    doc.setFontSize(10);
-  doc.text(`No. Pesanan: ${orderNumber}`, 20, y);
-    y += 7;
-    doc.text('Status: LUNAS', 20, y);
-    y += 10;
-
-// Customer info
-    doc.text(`Nama: ${order.customerName || '-'}`, 20, y);
-    y += 7;
- doc.text(`Telepon: ${order.customerPhone || '-'}`, 20, y);
-    y += 7;
-    doc.text(`Alamat: ${order.customerAddress || '-'}`, 20, y);
-    y += 10;
-
-    // Items
-    doc.text('ITEM', 20, y);
-  y += 7;
-    items.forEach((item) => {
-      const qty = item.quantity || item.qty || 1;
-      const name = item.menuName || item.name;
-      const sub = Number(item.subtotal || item.price * qty || 0);
-      doc.text(`${qty}x ${name} - ${money(sub)}`, 20, y);
-      y += 7;
-    });
-    y += 3;
-
-    // Totals
-    doc.text(`Subtotal: ${money(Number(order.subtotal || 0))}`, 20, y);
-    y += 7;
-    doc.text(`Biaya Layanan: ${money(Number(order.serviceFee || 0))}`, 20, y);
-    y += 7;
-    doc.setFontSize(12);
-    doc.text(`Total: ${money(Number(order.total || 0))}`, 20, y);
-
-    doc.save(`struk-${orderNumber}.pdf`);
-  };
+  if (!order) return null;
 
   return (
     <main className="dk-main dk-simple-page">
       <section className="dk-receipt">
-        <div className="dk-receipt-header">
-          <span className="dk-receipt-logo">DK</span>
-          <h2>DAPUR - KEMAS</h2>
+        <div className="dk-receipt-document" ref={printRef}>
+          <div className="dk-receipt-header">
+          <img src="/icon.png" alt="Dapur Kemas" className="dk-receipt-logo-img" />
+          <h2>DAPUR KEMAS</h2>
           <p>Aplikasi Pemesanan Makanan</p>
-        </div>
+          </div>
 
-        <div className="dk-receipt-order-number">{orderNumber}</div>
-        <div className="dk-receipt-status"><span>LUNAS</span></div>
+          <div className="dk-receipt-meta">
+            <div><span>No. Pesanan</span><strong>{orderNumber}</strong></div>
+            <div><span>Tanggal</span><strong>{formatDate(order.createdAt || new Date())}</strong></div>
+            <div><span>Status</span><strong className="dk-receipt-status">LUNAS</strong></div>
+          </div>
 
-        <div className="dk-receipt-section">
+          <div className="dk-receipt-section">
           <h4>Info Pelanggan</h4>
           <div className="dk-receipt-customer">
             <p><strong>{order.customerName || '-'}</strong></p>
@@ -481,9 +525,9 @@ function ReceiptPage({ data, onMenu, onTracking }) {
             {order.customerKelurahan && <p>{order.customerKelurahan}, {order.customerKecamatan}</p>}
             {order.customerKota && <p>{order.customerKota}, {order.customerProvinsi} {order.customerPostalCode}</p>}
           </div>
-        </div>
+          </div>
 
-        <div className="dk-receipt-items">
+          <div className="dk-receipt-items">
           {items.map((item, i) => {
             const qty = item.quantity || item.qty || 1;
             const name = item.menuName || item.name;
@@ -498,22 +542,24 @@ function ReceiptPage({ data, onMenu, onTracking }) {
               </div>
             );
           })}
-        </div>
+          </div>
 
-        <div className="dk-receipt-summary">
+          <div className="dk-receipt-summary">
           {order.subtotal && <div className="dk-receipt-summary-row"><span>Subtotal</span><span>{money(Number(order.subtotal))}</span></div>}
           {order.serviceFee && <div className="dk-receipt-summary-row"><span>Biaya Layanan (10%)</span><span>{money(Number(order.serviceFee))}</span></div>}
           <div className="dk-receipt-summary-row dk-receipt-summary-total"><span>TOTAL</span><strong>{money(Number(order.total || 0))}</strong></div>
-        </div>
+          </div>
 
-        <div className="dk-receipt-footer">
+          <div className="dk-receipt-footer">
           <p>Terima kasih atas pesanan Anda.</p>
           <p>Pesanan Anda sedang diproses oleh Dapur Kemas</p>
+            <p className="dk-receipt-legal">Struk ini adalah bukti pembayaran yang sah.</p>
+          </div>
         </div>
 
         <div className="dk-receipt-actions">
-          <button className="dk-btn-pay" onClick={handleShare}>Bagikan Resi</button>
-          <button className="dk-btn-outline-sm" onClick={handleSave}>Simpan Struk</button>
+          <button className="dk-receipt-share" onClick={handleShare} disabled={busy || !artifactsReady}>{!artifactsReady ? 'Menyiapkan Struk…' : busy ? 'Memproses…' : 'Bagikan Resi'}</button>
+          <button className="dk-btn-outline-sm" onClick={handleSave} disabled={busy}>{busy ? 'Memproses…' : 'Simpan Struk'}</button>
           <button className="dk-btn-outline-sm" onClick={onTracking}>Cek Status</button>
           <button className="dk-btn-outline-sm" onClick={onMenu}>Pesan Lagi</button>
         </div>

@@ -7,8 +7,13 @@
 
 ---
 
+## 2026-07-11
+
+- [fix] Pembeli (fe) - siapkan artefak struk sebelum tombol share ditekan, prioritaskan file PNG agar kompatibel dengan lebih banyak aplikasi lalu fallback ke PDF/teks, dan gunakan satu layout visual untuk halaman serta PDF sesuai `receipt-desain.md`
+
 ## 2026-07-10
 
+- [fix] Pembeli (fe) - struk resi: ganti logo dari teks "DK" ke `public/icon.png` (tambah CSS `.dk-receipt-logo-img`), render struk PDF via html2canvas agar hasil unduh/bagikan tampil seperti struk swalayan (font mesin tik) bukan teks biasa, dan perbaiki tombol Bagikan Resi supaya membagikan file PDF ke aplikasi manapun (Web Share API) dengan fallback unduh + salin teks di desktop
 - [fix] Pembeli - auto-redirect ke receipt setelah payment sukses dengan useCallback untuk stabilisasi state
 - [fix] Pembeli - ubah simpan resi dari .txt ke PDF menggunakan jsPDF sesuai desain awal
 - [fix] Pembeli - tampilkan foto produk pada ringkasan pesanan dan cegah Snap mengalihkan halaman resi ke finish redirect eksternal setelah pembayaran

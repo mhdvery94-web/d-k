@@ -252,7 +252,7 @@ Status order:
 10. Frontend membuka Snap popup.
 11. Jika payment settlement, webhook membuat `orders` dan `order_items`.
 12. Pembeli bisa cek status via nomor HP.
-13. Pembeli mendapat struk dan bisa share/simpan file `.txt`.
+13. Pembeli mendapat struk visual dan bisa membagikannya melalui aplikasi yang didukung perangkat atau menyimpannya sebagai PDF.
 
 ## Flow Admin
 
