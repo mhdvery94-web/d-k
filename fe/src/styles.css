@@ -7,9 +7,9 @@
   --dk-text: #24312F;
   --dk-text-muted: #5E6B67;
   --dk-text-subtle: #8A9591;
-  --dk-bg: #FFFDF6;          /* warm cream surface */
+  --dk-bg: #FFFFFF;          /* white surface — high contrast on beige page */
   --dk-bg-page: #F5F5DC;     /* beige page background */
-  --dk-bg-hover: #EDEBCF;    /* beige hover */
+  --dk-bg-hover: #F0EEE0;    /* subtle warm hover */
   --dk-border: #DAD8BE;      /* warm border */
   --dk-border-light: #E9E7CE;
   --dk-green: #16A34A;
@@ -1838,13 +1838,13 @@ img { display: block; max-width: 100%; }
 .dk-tracking-card { background: white; border: 1px solid #DAD8BE; border-radius: 0; overflow: hidden; transition: box-shadow 0.2s; }
 .dk-tracking-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .dk-tracking-card-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; cursor: pointer; }
-.dk-tracking-card-body { padding: 14px; border-top: 1px solid #EEECD6; }
+.dk-tracking-card-body { padding: 14px; border-top: 1px solid #F0EEE0; }
 
 /* Status Stepper */
 .dk-tracking-stepper { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 0; position: relative; }
 .dk-tracking-stepper::before { content: ''; position: absolute; top: 28px; left: 24px; right: 24px; height: 2px; background: #DAD8BE; z-index: 0; }
 .dk-tracking-step { display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 1; min-width: 52px; }
-.dk-tracking-step-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #EEECD6; color: #8A9591; border: 2px solid #DAD8BE; transition: all 0.3s; }
+.dk-tracking-step-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #F0EEE0; color: #8A9591; border: 2px solid #DAD8BE; transition: all 0.3s; }
 .dk-tracking-step-label { font-size: 10px; color: #8A9591; text-align: center; font-weight: 500; }
 .dk-tracking-step-completed .dk-tracking-step-icon { background: #D1FAE5; color: #059669; border-color: #059669; }
 .dk-tracking-step-completed .dk-tracking-step-label { color: #059669; }
@@ -1878,7 +1878,7 @@ img { display: block; max-width: 100%; }
 .dk-phone-prefix { height: 100%; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--dk-border); background: #E4F1F0; color: #2D8B8D; font-weight: 800; font-size: 14px; }
 .dk-phone-row-track { flex: 1; min-width: 220px; }
 .dk-payment-note { margin: 14px 0; padding: 12px 14px; border-radius: 0; background: #E4F1F0; border: 1px solid #B4D8D7; color: #1F6B6D; font-size: 13px; line-height: 1.5; font-weight: 600; }
-.dk-form-input[readonly] { background: #FBFAEC; color: #5E6B67; cursor: not-allowed; }
+.dk-form-input[readonly] { background: #FFFFFF; color: #5E6B67; cursor: not-allowed; }
 .dk-phone-preview { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 13px; }
 .dk-phone-preview.valid { color: #059669; }
 .dk-phone-preview.invalid { color: #DC2626; }
@@ -1897,10 +1897,10 @@ img { display: block; max-width: 100%; }
 .dk-order-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .dk-order-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; cursor: pointer; gap: 8px; }
 .dk-order-foot { display: flex; justify-content: space-between; align-items: center; padding: 0 14px 10px; font-size: 13px; color: #5E6B67; }
-.dk-order-detail { padding: 0 14px 14px; border-top: 1px solid #EEECD6; }
+.dk-order-detail { padding: 0 14px 14px; border-top: 1px solid #F0EEE0; }
 .dk-order-detail p { font-size: 13px; color: #4A5551; margin: 4px 0; }
 .dk-order-items { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
-.dk-order-items span { font-size: 13px; color: #4A5551; background: #FBFAEC; padding: 3px 8px; border-radius: 0; }
+.dk-order-items span { font-size: 13px; color: #4A5551; background: #FFFFFF; padding: 3px 8px; border-radius: 0; }
 .dk-admin-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
 /* ── Header nav button contrast fix ── */
@@ -2037,7 +2037,7 @@ img { display: block; max-width: 100%; }
 
 /* ── Frontend polish: user address + admin order/report layout ── */
 .dk-orders-page { max-width: 1100px; margin: 0 auto; }
-.dk-app-admin .dk-admin { background: #FBFAEC; min-height: calc(100vh - 88px); }
+.dk-app-admin .dk-admin { background: #FFFFFF; min-height: calc(100vh - 88px); }
 .dk-app-admin .dk-admin-content { background: transparent; }
 .dk-app-admin .dk-admin-nav { background: #FFFFFF; padding-top: 0; }
 .dk-app-admin .dk-admin-nav-btn { min-height: 48px; }
@@ -2053,7 +2053,7 @@ img { display: block; max-width: 100%; }
 .dk-admin-order-summary { display: flex; align-items: center; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 .dk-admin-order-customer { display: flex; gap: 12px; justify-content: space-between; align-items: center; padding: 0 16px 14px; flex-wrap: wrap; }
 .dk-admin-order-detail { padding: 16px; display: grid; gap: 12px; }
-.dk-admin-order-address { display: grid; gap: 4px; padding: 12px; border-radius: 0; background: #FBFAEC; }
+.dk-admin-order-address { display: grid; gap: 4px; padding: 12px; border-radius: 0; background: #FFFFFF; }
 .dk-admin-order-address strong { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #5E6B67; }
 .dk-admin-order-address p { margin: 0; }
 .dk-admin-order-address small { color: #5E6B67; line-height: 1.5; }
@@ -2062,7 +2062,7 @@ img { display: block; max-width: 100%; }
 .dk-seller-checklist { display: grid; gap: 10px; padding: 14px; border: 1px solid #C7C4A8; border-radius: 0; background: #FFFFFF; }
 .dk-seller-checklist > strong { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #3A423F; }
 .dk-seller-checklist-items { display: grid; gap: 8px; }
-.dk-seller-checkline { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 0; background: #FBFAEC; font-size: 14px; color: #3A423F; }
+.dk-seller-checkline { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 0; background: #FFFFFF; font-size: 14px; color: #3A423F; }
 .dk-seller-checkline input, .dk-seller-checks input { width: 16px; height: 16px; accent-color: #2D8B8D; }
 .dk-seller-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; padding-top: 8px; border-top: 1px dashed #C7C4A8; }
 .dk-seller-checks label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4A5551; }
@@ -2080,7 +2080,7 @@ img { display: block; max-width: 100%; }
 .dk-status-badge.dk-status-completed { background: #D1FAE5; color: #059669; }
 .dk-status-badge.cancelled,
 .dk-status-badge.dk-status-cancelled { background: #FEE2E2; color: #DC2626; }
-.dk-report-control-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 14px; padding: 14px; border: 1px solid #DAD8BE; border-radius: 0; background: #FBFAEC; }
+.dk-report-control-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 14px; padding: 14px; border: 1px solid #DAD8BE; border-radius: 0; background: #FFFFFF; }
 .dk-report-periods { flex-wrap: wrap; gap: 8px; }
 .dk-report-toolbar-actions { justify-content: flex-end; align-items: center; }
 .dk-report-date-range { display: flex; gap: 8px; flex-wrap: wrap; }
