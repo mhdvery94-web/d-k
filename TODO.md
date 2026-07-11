@@ -48,6 +48,7 @@
 
 ## Done
 
+- [x] Fix Pembeli - tampilkan hanya alamat detail pada struk tanpa mengulang lokasi hasil kode pos - 2026-07-11
 - [x] Fix Pembeli - ganti unduhan dan file share struk dari PDF/PNG besar menjadi JPEG terkompresi - 2026-07-11
 - [x] Fix Pembeli - 3 bug minor struk: tombol ikon sejajar, status LUNAS polos, dan modal fallback share untuk HTTP - 2026-07-11
 - [x] Fix Pembeli - share struk lintas aplikasi, PDF visual, dan layout sesuai `receipt-desain.md` - 2026-07-11

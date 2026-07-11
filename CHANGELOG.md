@@ -9,6 +9,7 @@
 
 ## 2026-07-11
 
+- [fix] Pembeli (fe) - hilangkan duplikasi alamat pada struk dengan menampilkan `customerAddress` hanya sampai sebelum kelurahan; lokasi otomatis kelurahan/kecamatan/kota/provinsi/kode pos tetap ditampilkan pada baris terpisah
 - [fix] Pembeli (fe) - ganti simpan/share struk dari PDF/PNG berukuran sekitar 7 MB menjadi JPEG kualitas 82% dengan capture scale 2 agar file lebih ringan tanpa mengubah layout; hapus jsPDF dari bundle pembeli
 - [fix] Pembeli (fe) - rapikan struk menjadi thermal panjang, sejajarkan tombol Bagikan/Simpan/Status/Ulangi sebagai empat action icon, hilangkan background status LUNAS, dan ganti alert unsupported share pada HTTP dengan modal WhatsApp/Telegram/email/salin/unduh PDF
 - [fix] Pembeli (fe) - siapkan artefak struk sebelum tombol share ditekan, prioritaskan file PNG agar kompatibel dengan lebih banyak aplikasi lalu fallback ke PDF/teks, dan gunakan satu layout visual untuk halaman serta PDF sesuai `receipt-desain.md`

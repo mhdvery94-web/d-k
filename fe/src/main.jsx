@@ -381,6 +381,16 @@ function ReceiptPage({ data, onMenu, onTracking }) {
   const items = order?.items || [];
   const orderNumber = order?.orderNumber || order?.id;
   const shareText = `Resi Pesanan Dapur Kemas\n\nNo. Pesanan: ${orderNumber}\nNama: ${order?.customerName || '-'}\nTotal: ${money(Number(order?.total || 0))}\n\nTerima kasih atas pesanan Anda.`;
+  const locationParts = [
+    order?.customerKelurahan,
+    order?.customerKecamatan,
+    order?.customerKota,
+    order?.customerProvinsi,
+  ].filter(Boolean);
+  const addressDetail = locationParts.reduce((address, part) => {
+    const separatorIndex = address.toLocaleLowerCase('id-ID').indexOf(`, ${String(part).toLocaleLowerCase('id-ID')}`);
+    return separatorIndex >= 0 ? address.slice(0, separatorIndex).trim() : address;
+  }, String(order?.customerAddress || '').trim());
 
   const buildReceiptArtifacts = useCallback(async () => {
     const node = printRef.current;
@@ -536,7 +546,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
           <div className="dk-receipt-customer">
             <p><strong>{order.customerName || '-'}</strong></p>
             <p>{order.customerPhone || '-'}</p>
-            <p>{order.customerAddress || '-'}</p>
+            <p>{addressDetail || '-'}</p>
             {order.customerKelurahan && <p>{order.customerKelurahan}, {order.customerKecamatan}</p>}
             {order.customerKota && <p>{order.customerKota}, {order.customerProvinsi} {order.customerPostalCode}</p>}
           </div>
