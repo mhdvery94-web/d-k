@@ -7,7 +7,7 @@
   --dk-text: #24312F;
   --dk-text-muted: #5E6B67;
   --dk-text-subtle: #8A9591;
-  --dk-bg: #FFFFFF;          /* white surface — high contrast on beige page */
+  --dk-bg: #f8fafa;          /* off-white surface (cards, headers) */
   --dk-bg-page: #F5F5DC;     /* beige page background */
   --dk-bg-hover: #F0EEE0;    /* subtle warm hover */
   --dk-border: #DAD8BE;      /* warm border */
