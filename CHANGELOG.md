@@ -9,6 +9,7 @@
 
 ## 2026-07-11
 
+- [fix] Pembeli (fe) - rapikan struk menjadi thermal panjang, sejajarkan tombol Bagikan/Simpan/Status/Ulangi sebagai empat action icon, hilangkan background status LUNAS, dan ganti alert unsupported share pada HTTP dengan modal WhatsApp/Telegram/email/salin/unduh PDF
 - [fix] Pembeli (fe) - siapkan artefak struk sebelum tombol share ditekan, prioritaskan file PNG agar kompatibel dengan lebih banyak aplikasi lalu fallback ke PDF/teks, dan gunakan satu layout visual untuk halaman serta PDF sesuai `receipt-desain.md`
 
 ## 2026-07-10

@@ -378,6 +378,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
   const artifactsRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [artifactsReady, setArtifactsReady] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const items = order?.items || [];
   const orderNumber = order?.orderNumber || order?.id;
   const shareText = `Resi Pesanan Dapur Kemas\n\nNo. Pesanan: ${orderNumber}\nNama: ${order?.customerName || '-'}\nTotal: ${money(Number(order?.total || 0))}\n\nTerima kasih atas pesanan Anda.`;
@@ -457,45 +458,62 @@ function ReceiptPage({ data, onMenu, onTracking }) {
 
   const handleShare = async () => {
     if (busy || !artifactsRef.current) return;
-    setBusy(true);
     try {
-      const { doc, imageBlob, pdfBlob } = artifactsRef.current;
+      const { imageBlob, pdfBlob } = artifactsRef.current;
       const imageFile = new File([imageBlob], `struk-${orderNumber}.png`, { type: 'image/png' });
       const pdfFile = new File([pdfBlob], `struk-${orderNumber}.pdf`, { type: 'application/pdf' });
 
-      // Gambar diterima lebih banyak aplikasi; PDF tetap dipakai untuk tombol simpan.
-      if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [imageFile] })) {
+      if (window.isSecureContext && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [imageFile] })) {
+        setBusy(true);
         await navigator.share({
           title: `Resi #${orderNumber}`,
           text: shareText,
           files: [imageFile],
         });
-      } else if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [pdfFile] })) {
+      } else if (window.isSecureContext && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [pdfFile] })) {
+        setBusy(true);
         await navigator.share({ title: `Resi #${orderNumber}`, text: shareText, files: [pdfFile] });
-      } else if (typeof navigator.share === 'function') {
+      } else if (window.isSecureContext && typeof navigator.share === 'function') {
+        setBusy(true);
         await navigator.share({ title: `Resi #${orderNumber}`, text: shareText });
       } else {
-        doc.save(`struk-${orderNumber}.pdf`);
-        try {
-          await navigator.clipboard?.writeText(shareText);
-          alert('Perangkat ini tidak mendukung berbagi langsung. Struk PDF sudah diunduh dan teks resi disalin ke clipboard.');
-        } catch {
-          alert('Struk PDF sudah diunduh.');
-        }
+        setShareMenuOpen(true);
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.error('Gagal membagikan struk:', err);
-        try {
-          await navigator.clipboard?.writeText(shareText);
-          alert('Gagal membagikan struk. Teks resi disalin ke clipboard.');
-        } catch {
-          alert('Gagal membagikan struk. Coba lagi.');
-        }
+        setShareMenuOpen(true);
       }
     } finally {
       setBusy(false);
     }
+  };
+
+  const openShareTarget = (target) => {
+    const encodedText = encodeURIComponent(shareText);
+    const targets = {
+      whatsapp: `https://wa.me/?text=${encodedText}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodedText}`,
+      email: `mailto:?subject=${encodeURIComponent(`Resi #${orderNumber}`)}&body=${encodedText}`,
+    };
+    window.open(targets[target], '_blank', 'noopener,noreferrer');
+    setShareMenuOpen(false);
+  };
+
+  const copyReceiptText = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = shareText;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+    }
+    setShareMenuOpen(false);
   };
 
   if (!order) return null;
@@ -558,12 +576,39 @@ function ReceiptPage({ data, onMenu, onTracking }) {
         </div>
 
         <div className="dk-receipt-actions">
-          <button className="dk-receipt-share" onClick={handleShare} disabled={busy || !artifactsReady}>{!artifactsReady ? 'Menyiapkan Struk…' : busy ? 'Memproses…' : 'Bagikan Resi'}</button>
-          <button className="dk-btn-outline-sm" onClick={handleSave} disabled={busy}>{busy ? 'Memproses…' : 'Simpan Struk'}</button>
-          <button className="dk-btn-outline-sm" onClick={onTracking}>Cek Status</button>
-          <button className="dk-btn-outline-sm" onClick={onMenu}>Pesan Lagi</button>
+          <button className="dk-receipt-action" onClick={handleShare} disabled={busy || !artifactsReady} aria-label="Bagikan struk">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.1M8.6 13.4l6.8 4.1"/></svg><span>Bagikan</span>
+          </button>
+          <button className="dk-receipt-action" onClick={handleSave} disabled={busy} aria-label="Simpan struk PDF">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg><span>Simpan</span>
+          </button>
+          <button className="dk-receipt-action" onClick={onTracking} aria-label="Cek status pesanan">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Status</span>
+          </button>
+          <button className="dk-receipt-action" onClick={onMenu} aria-label="Pesan lagi">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg><span>Ulangi</span>
+          </button>
         </div>
       </section>
+
+      {shareMenuOpen && (
+        <div className="dk-share-sheet" role="dialog" aria-modal="true" aria-labelledby="share-receipt-title">
+          <button className="dk-share-sheet-backdrop" aria-label="Tutup pilihan bagikan" onClick={() => setShareMenuOpen(false)} />
+          <div className="dk-share-sheet-panel">
+            <div className="dk-share-sheet-header">
+              <div><h3 id="share-receipt-title">Bagikan Struk</h3><p>Pilih aplikasi tujuan</p></div>
+              <button onClick={() => setShareMenuOpen(false)} aria-label="Tutup">×</button>
+            </div>
+            <div className="dk-share-options">
+              <button onClick={() => openShareTarget('whatsapp')}><strong>WA</strong><span>WhatsApp</span></button>
+              <button onClick={() => openShareTarget('telegram')}><strong>TG</strong><span>Telegram</span></button>
+              <button onClick={() => openShareTarget('email')}><strong>@</strong><span>Email</span></button>
+              <button onClick={copyReceiptText}><strong>CP</strong><span>Salin</span></button>
+            </div>
+            <button className="dk-share-download" onClick={() => { handleSave(); setShareMenuOpen(false); }}>Unduh Struk PDF</button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
