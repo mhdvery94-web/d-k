@@ -7,6 +7,19 @@ import './styles.css';
 const ICONS = ['FD','MN','RB','NS','CK','ND','LM','OR','CF','DR','SN','FR','AP','BN','BG','HT','PZ','PA','SL','DS'];
 
 const API_BASE_URL = '/api';
+const SELLER_CHECKLIST_STORAGE_KEY = 'dk_seller_checklist_states';
+
+function loadSellerChecklistStates() {
+  try {
+    return JSON.parse(localStorage.getItem(SELLER_CHECKLIST_STORAGE_KEY) || '{}');
+  } catch (err) {
+    return {};
+  }
+}
+
+function ScrollView({ className, children }) {
+  return <div className={`dk-scrollview ${className || ''}`.trim()}>{children}</div>;
+}
 
 // Helper function for API calls with JWT
 async function apiCall(endpoint, options = {}) {
@@ -704,7 +717,11 @@ function OrderManager() {
   const [expanded, setExpanded] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [checklistStates, setChecklistStates] = useState({});
+  const [checklistStates, setChecklistStates] = useState(loadSellerChecklistStates);
+
+  useEffect(() => {
+    localStorage.setItem(SELLER_CHECKLIST_STORAGE_KEY, JSON.stringify(checklistStates));
+  }, [checklistStates]);
 
   const loadOrders = async () => {
     setLoading(true);
@@ -734,97 +751,24 @@ function OrderManager() {
     loadOrders();
   }
 
-  function buildSellerChecklist(order) {
-    const state = checklistStates[order.id] || {};
-    return [
-      'DAPUR - KEMAS',
-      'CHECKLIST PESANAN PENJUAL',
-      `No. Pesanan: ${order.orderNumber}`,
-    `Tanggal: ${formatDate(order.createdAt)}`,
-      `Pelanggan: ${order.customerName}`,
-      `Telepon: ${order.customerPhone}`,
-      `Alamat: ${order.customerAddress}`,
-      '',
-      'CEK ITEM',
-      ...(order.items || []).map((item) => {
-        const checked = state[`item-${item.id}`] ? '[✓]' : '[ ]';
-        return `${checked} ${item.quantity}x ${item.menuName}${item.notes ? ` - Catatan: ${item.notes}` : ''}`;
-      }),
-      '',
-      `CEK 1 - Picking: ${state['check1'] ? '[✓]' : '[ ]'} Lengkap  ${!state['check1'] && state['check1'] !== undefined ? '[✓]' : '[ ]'} Kurang`,
-    'Petugas 1: ____________________',
-      '',
-      `CEK 2 - Packing: ${state['check2'] ? '[✓]' : '[ ]'} Lengkap  ${!state['check2'] && state['check2'] !== undefined ? '[✓]' : '[ ]'} Kurang`,
-      'Petugas 2: ____________________',
-      '',
-      'Catatan: _______________________',
-    ].join('\n');
+  function updateSellerChecklist(orderId, key, checked) {
+    setChecklistStates((prev) => ({
+      ...prev,
+      [orderId]: {
+        ...prev[orderId],
+        [key]: checked,
+      },
+    }));
   }
 
   function saveSellerChecklist(order) {
     const checklistPdf = buildSellerChecklistPdf(order, checklistStates[order.id] || {});
     checklistPdf.save(`checklist-${safeFilePart(order.orderNumber)}.pdf`);
-    return;
-
-    const doc = new jsPDF();
-const state = checklistStates[order.id] || {};
-    
-    // Header
-    doc.setFontSize(16);
-    doc.text('DAPUR - KEMAS', 105, 15, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text('Checklist Pesanan Penjual', 105, 22, { align: 'center' });
-    
-    // Order info
-  let y = 35;
- doc.setFontSize(10);
-    doc.text(`Order ID: ${order.orderNumber}`, 20, y);
-    y += 7;
-    doc.text(`Nama: ${order.customerName}`, 20, y);
-    y += 7;
-  doc.text(`Tanggal: ${formatDate(order.createdAt)}`, 20, y);
-    y += 10;
-  
-    // Items checklist
-    doc.setFontSize(11);
-  doc.text('CEK 1 - Packing Barang:', 20, y);
- y += 7;
-    
-    order.items?.forEach((item) => {
-    const checked = state[`item-${item.id}`] ? '[✓]' : '[ ]';
-      doc.setFontSize(10);
-      doc.text(`${checked} ${item.quantity}x ${item.menuName}`, 25, y);
-      y += 6;
-    });
-    
-    y += 5;
-    doc.text('Petugas 1: ____________________', 20, y);
-    y += 10;
- 
-    // Check 2
-doc.setFontSize(11);
- const check2Status = state['check2'] ? '[✓] Lengkap  [ ] Kurang' : '[ ] Lengkap  [✓] Kurang';
-    doc.text(`CEK 2 - Packing: ${check2Status}`, 20, y);
-    y += 7;
-    doc.setFontSize(10);
-    doc.text('Petugas 2: ____________________', 20, y);
-    y += 10;
-    
-    doc.text('Catatan: _______________________', 20, y);
-    
-doc.save(`checklist-${order.orderNumber}.pdf`);
   }
 
   function printSellerChecklist(order) {
     const checklistPdf = buildSellerChecklistPdf(order, checklistStates[order.id] || {});
     printPdfDoc(checklistPdf);
-    return;
-
-    const lines = buildSellerChecklist(order).split('\n');
-    const win = window.open('', '_blank');
-    if (!win) return;
-    win.document.write(`<!doctype html><html><head><title>Checklist ${order.orderNumber}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111827}h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:0 0 18px;color:#475569}.line{padding:4px 0;font-size:13px;white-space:pre-wrap}.item{font-size:15px;padding:8px 0;border-bottom:1px dashed #CBD5E1}.sign{margin-top:14px;padding-top:8px}</style></head><body><h1>DAPUR - KEMAS</h1><h2>Checklist Pesanan Penjual</h2>${lines.slice(2).map((line) => `<div class="${line.startsWith('[✓]') || line.startsWith('[ ]') ? 'item' : line.startsWith('Petugas') || line.startsWith('CEK') ? 'line sign' : 'line'}">${line.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('')}<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}</script></body></html>`);
-    win.document.close();
   }
 
   const nextActions = {
@@ -839,7 +783,7 @@ doc.save(`checklist-${order.orderNumber}.pdf`);
       <div className="dk-admin-toolbar dk-orders-toolbar">
         <input
           className="dk-search-input"
-          placeholder="Cari order, nama, atau nomor HP"
+          placeholder="Cari nomor order"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') loadOrders(); }}
@@ -856,9 +800,10 @@ doc.save(`checklist-${order.orderNumber}.pdf`);
       {error && <div className="dk-login-error">{error}</div>}
       {loading && <p className="dk-admin-loading">Memuat pesanan...</p>}
 
-      <div className="dk-admin-order-list">
+      <ScrollView className="dk-admin-order-list">
         {orders.map((order) => {
           const isOpen = expanded === order.id;
+          const checklistState = checklistStates[order.id] || {};
           return (
             <article key={order.id} className="dk-order-card dk-admin-order-card">
               <button className="dk-order-head dk-admin-order-head" onClick={() => setExpanded(isOpen ? null : order.id)}>
@@ -889,76 +834,54 @@ doc.save(`checklist-${order.orderNumber}.pdf`);
                     {order.items?.map((item) => <span key={item.id}>{item.quantity}x {item.menuName} - {money(Number(item.subtotal))}</span>)}
                   </div>
 
-     <div className="dk-seller-checklist">
-              <strong>Checklist Penjual</strong>
-             <div className="dk-seller-checklist-items">
-{order.items?.map((item) => (
- <label key={item.id} className="dk-seller-checkline">
- <input 
-          type="checkbox" 
-   checked={!!(checklistStates[order.id]?.[`item-${item.id}`])}
-       onChange={(e) => {
-  setChecklistStates(prev => ({
-    ...prev,
-               [order.id]: {
-             ...prev[order.id],
-         [`item-${item.id}`]: e.target.checked
-    }
-   }));
-                 }}
-       />
-                   <span>{item.quantity}x {item.menuName}</span>
-         </label>
-            ))}
-  </div>
-     <div className="dk-seller-checks">
-      <label>
-  <input 
-      type="checkbox" 
-    checked={!!(checklistStates[order.id]?.['check1'])}
-          onChange={(e) => {
-            setChecklistStates(prev => ({
-           ...prev,
-              [order.id]: {
-          ...prev[order.id],
-   check1: e.target.checked
-        }
-       }));
-    }}
-              /> Cek 1 lengkap
-        </label>
-         <label>
-<input 
-     type="checkbox" 
-           checked={!!(checklistStates[order.id]?.['check2'])}
-           onChange={(e) => {
-      setChecklistStates(prev => ({
-   ...prev,
-[order.id]: {
-              ...prev[order.id],
- check2: e.target.checked
-    }
-       }));
-              }}
-  /> Cek 2 packing lengkap
-   </label>
-        </div>
-</div>
+                  <div className="dk-seller-checklist">
+                    <strong>Checklist Penjual</strong>
+                    <div className="dk-seller-checkline" role="group" aria-label={`Checklist item ${order.orderNumber}`}>
+                      {order.items?.map((item) => (
+                        <label key={item.id} className="dk-seller-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={!!checklistState[`item-${item.id}`]}
+                            onChange={(e) => updateSellerChecklist(order.id, `item-${item.id}`, e.target.checked)}
+                          />
+                          <span>{item.quantity}x {item.menuName}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="dk-seller-checks">
+                      <label className="dk-seller-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={!!checklistState.check1}
+                          onChange={(e) => updateSellerChecklist(order.id, 'check1', e.target.checked)}
+                        />
+                        <span>Cek 1 lengkap</span>
+                      </label>
+                      <label className="dk-seller-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={!!checklistState.check2}
+                          onChange={(e) => updateSellerChecklist(order.id, 'check2', e.target.checked)}
+                        />
+                        <span>Cek 2 packing lengkap</span>
+                      </label>
+                    </div>
+                  </div>
 
                   <div className="dk-admin-actions dk-admin-order-actions">
-                    <button className="dk-btn-outline" onClick={() => printSellerChecklist(order)}>Cetak PDF</button>
-                    <button className="dk-btn-outline" onClick={() => saveSellerChecklist(order)}>Simpan PDF</button>
+                    <button className="dk-btn-order-action dk-btn-order-secondary" onClick={() => printSellerChecklist(order)}>Cetak PDF</button>
+                    <button className="dk-btn-order-action dk-btn-order-primary" onClick={() => saveSellerChecklist(order)}>Simpan PDF</button>
                     {(nextActions[order.orderStatus] || []).map(([status, label]) => (
-                      <button key={status} className="dk-btn-edit" onClick={() => updateStatus(order, status)}>{label}</button>
+                      <button key={status} className="dk-btn-order-action dk-btn-order-success" onClick={() => updateStatus(order, status)}>{label}</button>
                     ))}
-                    {!['completed', 'cancelled'].includes(order.orderStatus) && <button className="dk-btn-delete" onClick={() => updateStatus(order, 'cancelled')}>Batalkan</button>}
+                    {!['completed', 'cancelled'].includes(order.orderStatus) && <button className="dk-btn-order-action dk-btn-order-danger" onClick={() => updateStatus(order, 'cancelled')}>Batalkan</button>}
                   </div>
                 </div>
               )}
             </article>
           );
         })}
-      </div>
+      </ScrollView>
     </div>
   );
 }
