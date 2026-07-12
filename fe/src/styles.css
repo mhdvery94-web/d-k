@@ -133,22 +133,12 @@ img { display: block; max-width: 100%; }
 .dk-brand-title { text-align: center; min-width: 0; }
 
 .dk-brand-title h1 {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--dk-text-muted);
   line-height: 16px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-}
-
-.dk-brand-title p {
-  font-size: 13px;
-  color: var(--dk-text-muted);
-  margin-top: 3px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .dk-header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }

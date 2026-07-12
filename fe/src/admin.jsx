@@ -323,8 +323,7 @@ function LoginPage({ onLogin }) {
       <div className="dk-login-card">
         <div className="dk-login-brand">
           <img src="/icon.png" alt="Dapur Kemas" className="dk-login-logo" />
-          <h1>DAPUR - KEMAS</h1>
-          <p>Panel Admin</p>
+          <h1>PANEL ADMIN</h1>
         </div>
         <form onSubmit={handleSubmit} className="dk-login-form">
           <label>Username</label>
