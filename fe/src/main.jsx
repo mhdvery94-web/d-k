@@ -264,70 +264,79 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
   // ── STEP: CUSTOMER INFO ──
   if (step === 'info') {
     return (
-      <div className="dk-overlay" onClick={onClose}>
+      <div className="dk-overlay dk-overlay-full" onClick={onClose}>
         <div className="dk-review-sheet dk-shipping-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="dk-review-header"><h2>Data Pengiriman</h2><button className="dk-btn-close" onClick={onClose}><MaterialIcon>close</MaterialIcon></button></div>
-
-          <div className="dk-form-group">
-            <label>Nama Pemesan</label>
-            <input className="dk-form-input" placeholder="Nama lengkap" value={customerName} onChange={(e) => { setCustomerName(e.target.value); setFormError(''); }} />
-          </div>
-
-          <div className="dk-form-group">
-            <label>Nomor HP / WhatsApp</label>
-            <div className="dk-phone-row">
-              <span className="dk-phone-prefix">+62</span>
-              <input className="dk-form-input" type="tel" placeholder="812-3456-7890" value={customerPhone} onChange={(e) => { setCustomerPhone(formatPhoneInput(e.target.value)); setFormError(''); }} />
+          <div className="dk-review-header">
+            <div className="dk-review-header-inner">
+              <h2>Data Pengiriman</h2>
+              <button className="dk-btn-close" onClick={onClose}><MaterialIcon>close</MaterialIcon></button>
             </div>
-            {customerPhone && <div className="dk-address-preview">Format tersimpan: +62 {validatePhoneInput(customerPhone).formatted || '-'}</div>}
           </div>
 
-          <div className="dk-form-group">
-            <div className="dk-address-grid">
-              <div>
-                <label>Kode Pos</label>
-                <input className="dk-form-input" inputMode="numeric" maxLength="5" placeholder="Cth: 12345" value={customerPostalCode} onChange={(e) => { setCustomerPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5)); setFormError(''); }} />
-              </div>
-              <div>
-                <label>Kelurahan</label>
-                <select className="dk-form-input" value={selectedLocation?.kelurahan || ''} onChange={(e) => setSelectedLocation(locations.find((loc) => loc.kelurahan === e.target.value) || null)}>
-                  <option value="">Pilih kelurahan</option>
-                  {locations.map((loc) => <option key={`${loc.postalCode}-${loc.kelurahan}`} value={loc.kelurahan}>{loc.kelurahan}</option>)}
-                </select>
-              </div>
+          <div className="dk-review-body">
+            <div className="dk-form-group">
+              <label>Nama Pemesan</label>
+              <input className="dk-form-input" placeholder="Nama lengkap" value={customerName} onChange={(e) => { setCustomerName(e.target.value); setFormError(''); }} />
             </div>
-            {customerPostalCode.length === 5 && !locations.length && <div className="dk-address-preview dk-address-warning">Kode pos tidak ditemukan. Cek lagi kode pos.</div>}
-            <div className="dk-address-grid">
-              <div>
-                <label>Kecamatan</label>
-                <input className="dk-form-input" readOnly value={selectedLocation?.kecamatan || ''} placeholder="Otomatis dari kode pos" />
+
+            <div className="dk-form-group">
+              <label>Nomor HP / WhatsApp</label>
+              <div className="dk-phone-row">
+                <span className="dk-phone-prefix">+62</span>
+                <input className="dk-form-input" type="tel" placeholder="812-3456-7890" value={customerPhone} onChange={(e) => { setCustomerPhone(formatPhoneInput(e.target.value)); setFormError(''); }} />
               </div>
-              <div>
-                <label>Kota/Kabupaten</label>
-                <input className="dk-form-input" readOnly value={selectedLocation?.kota || ''} placeholder="Otomatis dari kode pos" />
-              </div>
-              <div>
-                <label>Provinsi</label>
-                <input className="dk-form-input" readOnly value={selectedLocation?.provinsi || ''} placeholder="Otomatis dari kode pos" />
-              </div>
+              {customerPhone && <div className="dk-address-preview">Format tersimpan: +62 {validatePhoneInput(customerPhone).formatted || '-'}</div>}
             </div>
-            <label>Alamat Detail</label>
-            <textarea className="dk-form-input dk-form-textarea" placeholder="Nama jalan, gedung, no. rumah/unit..." value={customerAddress} onChange={(e) => { setCustomerAddress(e.target.value); setFormError(''); }} rows={2} />
-          </div>
 
-          <div className="dk-form-group">
-            <label>Catatan Pesanan (opsional)</label>
-            <textarea className="dk-form-input dk-form-textarea" placeholder="Tinggalkan catatan untuk pengemudi atau restoran..." value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} rows={2} />
-          </div>
+            <div className="dk-form-group">
+              <div className="dk-address-grid">
+                <div>
+                  <label>Kode Pos</label>
+                  <input className="dk-form-input" inputMode="numeric" maxLength="5" placeholder="Cth: 12345" value={customerPostalCode} onChange={(e) => { setCustomerPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5)); setFormError(''); }} />
+                </div>
+                <div>
+                  <label>Kelurahan</label>
+                  <select className="dk-form-input" value={selectedLocation?.kelurahan || ''} onChange={(e) => setSelectedLocation(locations.find((loc) => loc.kelurahan === e.target.value) || null)}>
+                    <option value="">Pilih kelurahan</option>
+                    {locations.map((loc) => <option key={`${loc.postalCode}-${loc.kelurahan}`} value={loc.kelurahan}>{loc.kelurahan}</option>)}
+                  </select>
+                </div>
+              </div>
+              {customerPostalCode.length === 5 && !locations.length && <div className="dk-address-preview dk-address-warning">Kode pos tidak ditemukan. Cek lagi kode pos.</div>}
+              <div className="dk-address-grid">
+                <div>
+                  <label>Kecamatan</label>
+                  <input className="dk-form-input" readOnly value={selectedLocation?.kecamatan || ''} placeholder="Otomatis dari kode pos" />
+                </div>
+                <div>
+                  <label>Kota/Kabupaten</label>
+                  <input className="dk-form-input" readOnly value={selectedLocation?.kota || ''} placeholder="Otomatis dari kode pos" />
+                </div>
+                <div>
+                  <label>Provinsi</label>
+                  <input className="dk-form-input" readOnly value={selectedLocation?.provinsi || ''} placeholder="Otomatis dari kode pos" />
+                </div>
+              </div>
+              <label>Alamat Detail</label>
+              <textarea className="dk-form-input dk-form-textarea" placeholder="Nama jalan, gedung, no. rumah/unit..." value={customerAddress} onChange={(e) => { setCustomerAddress(e.target.value); setFormError(''); }} rows={2} />
+            </div>
 
-          {formError && <div className="dk-form-error">{formError}</div>}
+            <div className="dk-form-group">
+              <label>Catatan Pesanan (opsional)</label>
+              <textarea className="dk-form-input dk-form-textarea" placeholder="Tinggalkan catatan untuk pengemudi atau restoran..." value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} rows={2} />
+            </div>
+
+            {formError && <div className="dk-form-error">{formError}</div>}
+          </div>
 
           <div className="dk-sheet-footer">
-            <button className="dk-btn-half dk-btn-half-back" onClick={() => setStep('cart')}>
-              <MaterialIcon>arrow_back</MaterialIcon>
-              Kembali
-            </button>
-            <button className="dk-btn-pay" onClick={proceedToConfirm}>Lanjut ke Pembayaran</button>
+            <div className="dk-sheet-footer-inner">
+              <button className="dk-btn-half dk-btn-half-back" onClick={() => setStep('cart')}>
+                <MaterialIcon>arrow_back</MaterialIcon>
+                Kembali
+              </button>
+              <button className="dk-btn-pay" onClick={proceedToConfirm}>Lanjut ke Pembayaran</button>
+            </div>
           </div>
         </div>
       </div>
@@ -384,20 +393,24 @@ function CartBar({ itemCount, total, onReview }) {
   if (itemCount === 0) {
     return (
       <div className="dk-cartbar dk-cartbar-empty">
-        <div className="dk-cartbar-info">
-          <MaterialIcon>shopping_cart</MaterialIcon>
-          <span>Pilih menu untuk memulai pesanan</span>
+        <div className="dk-cartbar-inner">
+          <div className="dk-cartbar-info">
+            <MaterialIcon>shopping_cart</MaterialIcon>
+            <span>Pilih menu untuk memulai pesanan</span>
+          </div>
         </div>
       </div>
     );
   }
   return (
     <div className="dk-cartbar dk-cartbar-filled">
-      <div className="dk-cartbar-info"><div className="dk-cartbar-count">{itemCount} item</div><div className="dk-cartbar-total">{money(total)}</div></div>
-      <button className="dk-btn-pay" onClick={onReview}>
-        <MaterialIcon>point_of_sale</MaterialIcon>
-        Checkout
-      </button>
+      <div className="dk-cartbar-inner">
+        <div className="dk-cartbar-info"><div className="dk-cartbar-count">{itemCount} item</div><div className="dk-cartbar-total">{money(total)}</div></div>
+        <button className="dk-btn-pay" onClick={onReview}>
+          <MaterialIcon>point_of_sale</MaterialIcon>
+          Checkout
+        </button>
+      </div>
     </div>
   );
 }
@@ -1008,6 +1021,7 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
   }, []);
 
   return (
+    <>
     <div className="dk-app">
       <Header onTracking={() => setPage('tracking')} />
       {page === 'menu' && <main className="dk-main">
@@ -1022,11 +1036,12 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
         />
       )}
       {page === 'receipt' && <ReceiptPage data={receiptData} onMenu={() => setPage('menu')} onTracking={() => setPage('tracking')} />}
+    </div>
       {page === 'menu' && <CartBar itemCount={itemCount} total={total} onReview={() => setReviewOpen(true)} />}
       {reviewOpen && (
         <CartReview cart={cart} onClose={() => setReviewOpen(false)} onCheckout={handleCheckout} onUpdateNote={updateNote} onIncrease={increase} onDecrease={decrease} />
       )}
-    </div>
+    </>
   );
 }
 

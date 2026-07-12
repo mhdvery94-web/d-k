@@ -457,25 +457,31 @@ img { display: block; max-width: 100%; }
 }
 
 /* ═══════════════ CART BAR ═══════════════ */
+/* Full-bleed bar: background nempel ke tepi kiri/kanan/bawah viewport,
+   konten dibatasi max-width lewat inner wrapper (bukan di container fixed). */
 .dk-cartbar {
   position: fixed;
-  bottom: 0; left: 50%;
-  transform: translateX(-50%);
+  bottom: 0; left: 0; right: 0;
   width: 100%;
-  padding: 16px;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
   background: var(--dk-bg);
   border-top: 1px solid rgba(225, 227, 227, 0.2);
   box-shadow: 0 -8px 24px rgba(0,105,107,0.08);
+  border-radius: 0;
   z-index: 40;
+}
+.dk-cartbar-inner {
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
   gap: 14px;
 }
-.dk-cartbar-empty { display: flex; justify-content: center; padding: 16px 20px; }
+.dk-cartbar-empty .dk-cartbar-inner { display: flex; justify-content: center; padding: 16px 20px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
 .dk-cartbar-empty .dk-cartbar-info { display: flex; align-items: center; gap: 10px; color: var(--dk-text-subtle); font-size: 14px; font-weight: 500; }
-.dk-cartbar-filled { align-items: stretch; }
+.dk-cartbar-filled .dk-cartbar-inner { align-items: stretch; }
 .dk-cartbar-info { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; }
 .dk-cartbar-count { font-size: 14px; line-height: 20px; color: var(--dk-text-muted); font-weight: 400; }
 .dk-cartbar-total { font-size: 24px; line-height: 32px; font-weight: 700; color: var(--dk-text); letter-spacing: -0.02em; }
@@ -510,38 +516,73 @@ img { display: block; max-width: 100%; }
 }
 
 .dk-checkout-sheet { width: min(512px, 100%); }
+/* Full-screen overlay: sheet nempel ke semua tepi viewport tanpa gap */
+.dk-overlay-full { padding: 0; align-items: stretch; }
 .dk-shipping-sheet {
-  width: min(480px, 100%);
+  width: 100%;
   height: 100dvh;
   max-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--dk-bg-page);
   padding: 0;
+  border-radius: 0;
+  overflow: hidden;
 }
+
+/* Header: background full-width nempel ke tepi, konten dibatasi via inner wrapper */
 .dk-shipping-sheet .dk-review-header {
   flex: none;
-  padding: 12px 16px;
+  position: static;
+  padding: 0;
   border-bottom: 1px solid rgba(189, 201, 200, 0.3);
   background: #fff;
+  border-radius: 0;
 }
-.dk-shipping-sheet .dk-form-group,
-.dk-shipping-sheet .dk-address-grid,
-.dk-shipping-sheet .dk-form-error,
-.dk-shipping-sheet .dk-address-preview {
-  margin-left: 16px;
-  margin-right: 16px;
+.dk-shipping-sheet .dk-review-header-inner {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.dk-shipping-sheet .dk-review-header + .dk-form-group { margin-top: 24px; }
+.dk-shipping-sheet .dk-review-header-inner h2 { flex: 1; }
+
+/* Body: area scroll, konten dibatasi & center */
+.dk-shipping-sheet .dk-review-body {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.dk-shipping-sheet .dk-review-body > .dk-form-group:first-child { margin-top: 24px; }
+
+/* Footer: background full-width nempel ke tepi bawah, tombol dibatasi via inner wrapper */
 .dk-shipping-sheet .dk-sheet-footer {
-  position: sticky;
-  bottom: 0;
+  flex: none;
+  position: static;
   z-index: 3;
-  margin-top: 24px;
-  padding: 24px 16px max(24px, env(safe-area-inset-bottom));
+  margin-top: 0;
+  padding: 0;
   background: #fff;
   border-top: 1px solid rgba(189, 201, 200, 0.3);
+  border-radius: 0;
+  box-shadow: 0 -8px 24px rgba(0,105,107,0.08);
 }
+.dk-shipping-sheet .dk-sheet-footer-inner {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 24px 16px max(24px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.dk-shipping-sheet .dk-sheet-footer-inner > button { width: 100%; margin: 0; justify-content: center; }
 
 .dk-review-header {
   display: flex;
@@ -1784,7 +1825,7 @@ img { display: block; max-width: 100%; }
   .dk-category-items { padding: 0; }
   .dk-menu-item { gap: 16px; padding: 16px; }
   .dk-menu-thumb { width: 64px; height: 64px; }
-  .dk-cartbar { padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  .dk-cartbar-inner { padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
   .dk-admin { padding: 0 0 24px; }
   .dk-admin-nav { padding: 4px 12px 0; }
   .dk-admin-content { padding: 16px 14px; }
