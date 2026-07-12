@@ -2306,11 +2306,19 @@ img { display: block; max-width: 100%; }
   background: var(--dk-blue-dark);
 }
 
+/* --- UPDATE: Summary Card 2 Baris & 2 Kolom --- */
 .dk-dashboard-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-bottom: 32px;
+}
+
+/* Jika layar mengecil (HP), ubah jadi 1 kolom ke bawah */
+@media (max-width: 600px) {
+  .dk-dashboard-summary {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dk-summary-card {
@@ -2362,21 +2370,64 @@ img { display: block; max-width: 100%; }
   color: var(--dk-text-subtle);
 }
 
-.dk-dashboard-section {
+/* --- UPDATE: Accordion (Listing Buka Tutup) --- */
+.dk-dashboard-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dk-accordion-item {
   background: white;
   border: 1px solid var(--dk-border);
-  border-radius: 0;
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.dk-dashboard-section h3 {
-  font-size: 16px;
-  font-weight: 600;
+.dk-accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--dk-bg-page);
   color: var(--dk-text);
-  margin: 0 0 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
 }
 
+.dk-accordion-header:hover {
+  background: #f3f4f6;
+}
+
+.dk-accordion-icon {
+  font-size: 12px;
+  color: var(--dk-text-muted);
+}
+
+.dk-accordion-content {
+  padding: 20px;
+  border-top: 1px solid var(--dk-border);
+  background: white;
+}
+
+/* Styling Khusus Warning Stock di Accordion */
+.dk-warning-item {
+  border-color: #FDE68A;
+}
+
+.dk-warning-item .dk-accordion-header {
+  background: #FFFBEB;
+  color: #92400E;
+}
+
+.dk-warning-item .dk-accordion-header:hover {
+  background: #FEF3C7;
+}
+
+/* --- Isi Konten (Tetap menggunakan desain lama Anda) --- */
 .dk-status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -2396,25 +2447,10 @@ img { display: block; max-width: 100%; }
   margin-bottom: 6px;
 }
 
-.dk-status-badge.dk-status-pending {
-  background: #FEF3C7;
-  color: #92400E;
-}
-
-.dk-status-badge.dk-status-preparing {
-  background: #D2E8E7;
-  color: #004F51;
-}
-
-.dk-status-badge.dk-status-delivering {
-  background: #E0E7FF;
-  color: #3730A3;
-}
-
-.dk-status-badge.dk-status-completed {
-  background: #D1FAE5;
-  color: #065F46;
-}
+.dk-status-badge.dk-status-pending { background: #FEF3C7; color: #92400E; }
+.dk-status-badge.dk-status-preparing { background: #D2E8E7; color: #004F51; }
+.dk-status-badge.dk-status-delivering { background: #E0E7FF; color: #3730A3; }
+.dk-status-badge.dk-status-completed { background: #D1FAE5; color: #065F46; }
 
 .dk-status-label {
   font-size: 13px;
@@ -2531,11 +2567,6 @@ img { display: block; max-width: 100%; }
   font-size: 13px;
   font-weight: 600;
   color: #DC2626;
-}
-
-.dk-warning-section {
-  background: #FFFBEB;
-  border-color: #FDE68A;
 }
 
 .dk-dashboard-loading,

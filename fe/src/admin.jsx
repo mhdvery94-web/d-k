@@ -1113,6 +1113,21 @@ function CategoryForm({ initial, onSave, onCancel, onDelete }) {
 function DashboardStats() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // State untuk mengontrol seksi mana yang terbuka/tertutup
+  const [openSection, setOpenSection] = useState({
+    status: true,  // Default terbuka
+    recent: false, // Default tertutup
+    popular: false,
+    stock: false
+  });
+
+  const toggleSection = (section) => {
+    setOpenSection((prev) => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const loadStats = async () => {
     try {
@@ -1151,7 +1166,7 @@ function DashboardStats() {
         </button>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - (CSS akan membuatnya jadi 2 baris x 2 kolom) */}
       <div className="dk-dashboard-summary">
         <div className="dk-summary-card">
           <div className="dk-summary-icon">📦</div>
@@ -1190,76 +1205,109 @@ function DashboardStats() {
         </div>
       </div>
 
-      {/* Status Orders */}
-      <div className="dk-dashboard-section">
-        <h3>Status Pesanan</h3>
-        <div className="dk-status-grid">
-          <div className="dk-status-item">
-            <div className="dk-status-badge dk-status-pending">{stats.status.pending}</div>
-            <div className="dk-status-label">Menunggu</div>
-          </div>
-          <div className="dk-status-item">
-            <div className="dk-status-badge dk-status-preparing">{stats.status.preparing}</div>
-            <div className="dk-status-label">Diproses</div>
-          </div>
-          <div className="dk-status-item">
-            <div className="dk-status-badge dk-status-delivering">{stats.status.delivering}</div>
-            <div className="dk-status-label">Dikirim</div>
-          </div>
-          <div className="dk-status-item">
-            <div className="dk-status-badge dk-status-completed">{stats.status.completedToday}</div>
-            <div className="dk-status-label">Selesai Hari Ini</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Popular Menus */}
-      <div className="dk-dashboard-section">
-        <h3>Menu Terlaris</h3>
-        <div className="dk-popular-menus">
-          {stats.popularMenus.map((menu, index) => (
-            <div key={menu.id} className="dk-popular-menu-item">
-              <div className="dk-popular-rank">#{index + 1}</div>
-              <div className="dk-popular-name">{menu.name}</div>
-              <div className="dk-popular-qty">{menu.quantity} terjual</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Orders */}
-      <div className="dk-dashboard-section">
-        <h3>Pesanan Terbaru</h3>
-        <div className="dk-recent-orders">
-          {stats.recentOrders.slice(0, 5).map((order) => (
-            <div key={order.id} className="dk-recent-order-item">
-              <div className="dk-recent-order-info">
-                <div className="dk-recent-order-number">{order.orderNumber}</div>
-                <div className="dk-recent-order-customer">{order.customerName}</div>
-              </div>
-              <div className="dk-recent-order-details">
-                <div className="dk-recent-order-total">{money(order.total)}</div>
-                <div className={`dk-recent-order-status dk-status-${order.status}`}>{order.status}</div>
+      {/* Accordion / Listing Sections */}
+      <div className="dk-dashboard-accordion">
+        
+        {/* 1. Status Pesanan */}
+        <div className="dk-accordion-item">
+          <span className="dk-accordion-header" onClick={() => toggleSection('status')}>
+            <span>1. Status Pesanan</span>
+            <span className="dk-accordion-icon">{openSection.status ? '▼' : '▶'}</span>
+          </span>
+          {openSection.status && (
+            <div className="dk-accordion-content">
+              <div className="dk-status-grid">
+                <div className="dk-status-item">
+                  <div className="dk-status-badge dk-status-pending">{stats.status.pending}</div>
+                  <div className="dk-status-label">Menunggu</div>
+                </div>
+                <div className="dk-status-item">
+                  <div className="dk-status-badge dk-status-preparing">{stats.status.preparing}</div>
+                  <div className="dk-status-label">Diproses</div>
+                </div>
+                <div className="dk-status-item">
+                  <div className="dk-status-badge dk-status-delivering">{stats.status.delivering}</div>
+                  <div className="dk-status-label">Dikirim</div>
+                </div>
+                <div className="dk-status-item">
+                  <div className="dk-status-badge dk-status-completed">{stats.status.completedToday}</div>
+                  <div className="dk-status-label">Selesai Hari Ini</div>
+                </div>
               </div>
             </div>
-          ))}
+          )}
         </div>
-      </div>
 
-      {/* Low Stock Warning */}
-      {stats.lowStockMenus.length > 0 && (
-        <div className="dk-dashboard-section dk-warning-section">
-          <h3>⚠️ Stok Menipis</h3>
-          <div className="dk-low-stock-list">
-            {stats.lowStockMenus.map((menu) => (
-              <div key={menu.id} className="dk-low-stock-item">
-                <div className="dk-low-stock-name">{menu.name}</div>
-                <div className="dk-low-stock-qty">{menu.stock} tersisa</div>
+        {/* 2. Pesanan Terbaru */}
+        <div className="dk-accordion-item">
+          <span className="dk-accordion-header" onClick={() => toggleSection('recent')}>
+            <span>2. Pesanan Terbaru</span>
+            <span className="dk-accordion-icon">{openSection.recent ? '▼' : '▶'}</span>
+          </span>
+          {openSection.recent && (
+            <div className="dk-accordion-content">
+              <div className="dk-recent-orders">
+                {stats.recentOrders.slice(0, 5).map((order) => (
+                  <div key={order.id} className="dk-recent-order-item">
+                    <div className="dk-recent-order-info">
+                      <div className="dk-recent-order-number">{order.orderNumber}</div>
+                      <div className="dk-recent-order-customer">{order.customerName}</div>
+                    </div>
+                    <div className="dk-recent-order-details">
+                      <div className="dk-recent-order-total">{money(order.total)}</div>
+                      <div className={`dk-recent-order-status dk-status-${order.status}`}>{order.status}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* 3. Menu Terlaris */}
+        <div className="dk-accordion-item">
+          <span className="dk-accordion-header" onClick={() => toggleSection('popular')}>
+            <span>3. Menu Terlaris</span>
+            <span className="dk-accordion-icon">{openSection.popular ? '▼' : '▶'}</span>
+          </span>
+          {openSection.popular && (
+            <div className="dk-accordion-content">
+              <div className="dk-popular-menus">
+                {stats.popularMenus.map((menu, index) => (
+                  <div key={menu.id} className="dk-popular-menu-item">
+                    <div className="dk-popular-rank">#{index + 1}</div>
+                    <div className="dk-popular-name">{menu.name}</div>
+                    <div className="dk-popular-qty">{menu.quantity} terjual</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4. Stok Menipis */}
+        {stats.lowStockMenus.length > 0 && (
+          <div className="dk-accordion-item dk-warning-item">
+            <span className="dk-accordion-header" onClick={() => toggleSection('stock')}>
+              <span>4. ⚠️ Stok Menipis</span>
+              <span className="dk-accordion-icon">{openSection.stock ? '▼' : '▶'}</span>
+            </span>
+            {openSection.stock && (
+              <div className="dk-accordion-content">
+                <div className="dk-low-stock-list">
+                  {stats.lowStockMenus.map((menu) => (
+                    <div key={menu.id} className="dk-low-stock-item">
+                      <div className="dk-low-stock-name">{menu.name}</div>
+                      <div className="dk-low-stock-qty">{menu.stock} tersisa</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
