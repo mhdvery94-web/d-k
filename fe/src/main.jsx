@@ -4,6 +4,16 @@ import { initialMenus, getMenuImage, FALLBACK_IMG, money, formatDate, validatePh
 import html2canvas from 'html2canvas';
 import './styles.css';
 
+const categoryIcons = {
+  makanan: 'restaurant',
+  snack: 'icecream',
+  minuman: 'local_cafe',
+};
+
+function MaterialIcon({ children, className = '' }) {
+  return <span className={`material-symbols-outlined ${className}`}>{children}</span>;
+}
+
 function getDiscountedPrice(item) {
   if (!item.discountPercent) return item.price;
   return Math.round(item.price - (item.price * item.discountPercent / 100));
@@ -37,12 +47,14 @@ function Header({ onTracking }) {
   return (
     <header className="dk-header">
       <div className="dk-header-top">
-        <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
+        <span className="dk-brand-icon-text" aria-label="Dapur Kemas">DK</span>
         <div className="dk-brand-title">
-          <h1>DAPUR - KEMAS</h1>
-          <p>Aplikasi Pemesanan Makanan</p>
+          <h1>DAPUR KEMAS</h1>
         </div>
-        <button className="dk-btn-nav" onClick={onTracking}>Cek Pesanan</button>
+        <button className="dk-btn-nav" onClick={onTracking}>
+          <MaterialIcon>search</MaterialIcon>
+          Cari
+        </button>
       </div>
     </header>
   );
@@ -74,13 +86,13 @@ function MenuItem({ item, qty, note, stock, onAdd, onIncrease, onDecrease }) {
           <span className="dk-stock-empty">Habis</span>
         ) : qty > 0 ? (
           <div className="dk-stepper">
-            <button onClick={() => onDecrease(item.id)} aria-label="Kurangi">−</button>
+            <button onClick={() => onDecrease(item.id)} aria-label="Kurangi"><MaterialIcon>remove</MaterialIcon></button>
             <span>{qty}</span>
-            <button onClick={() => onIncrease(item.id)} aria-label="Tambah" disabled={qty >= stock}>+</button>
+            <button onClick={() => onIncrease(item.id)} aria-label="Tambah" disabled={qty >= stock}><MaterialIcon>add</MaterialIcon></button>
           </div>
         ) : (
           <button className="dk-btn-add" onClick={() => onAdd(item)}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            <MaterialIcon>add</MaterialIcon>
             Tambah
           </button>
         )}
@@ -92,15 +104,14 @@ function MenuItem({ item, qty, note, stock, onAdd, onIncrease, onDecrease }) {
 /* ── Category Section ── */
 function CategorySection({ category, cart, menus, onAdd, onIncrease, onDecrease }) {
   const [open, setOpen] = useState(true);
+  const iconName = categoryIcons[String(category.name || '').toLocaleLowerCase('id-ID')] || 'restaurant_menu';
   return (
     <div className="dk-category">
       <button className="dk-category-header" onClick={() => setOpen((p) => !p)} aria-expanded={open}>
-        <span className="dk-category-icon">{category.icon}</span>
+        <span className="dk-category-icon"><MaterialIcon>{iconName}</MaterialIcon></span>
         <span className="dk-category-label">{category.name}</span>
         <span className="dk-category-count">{category.items.length} menu</span>
-        <svg className={`dk-chevron ${open ? 'dk-chevron-open' : ''}`} width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+        <MaterialIcon className="dk-chevron">{open ? 'expand_less' : 'expand_more'}</MaterialIcon>
       </button>
       {open && (
         <div className="dk-category-items">
@@ -192,8 +203,8 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
   if (step === 'confirm') {
     return (
       <div className="dk-overlay" onClick={() => setStep('info')}>
-        <div className="dk-review-sheet" onClick={(e) => e.stopPropagation()}>
-     <div className="dk-review-header"><h2>Konfirmasi Pembayaran</h2><button className="dk-btn-close" onClick={onClose}>✕</button></div>
+        <div className="dk-review-sheet dk-checkout-sheet" onClick={(e) => e.stopPropagation()}>
+     <div className="dk-review-header"><h2>Konfirmasi Pembayaran</h2><button className="dk-btn-close" onClick={onClose}><MaterialIcon>close</MaterialIcon></button></div>
 
           <div className="dk-review-items">
   {cart.map((c) => {
@@ -206,7 +217,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
       <div className="dk-review-info">
         <strong>{c.name}</strong>
       <span className="dk-review-meta">{money(discounted)} × {c.qty}</span>
-    {c.note && <span className="dk-review-note" style={{ fontSize: '12px', color: '#64748B' }}>Catatan: {c.note}</span>}
+    {c.note && <span className="dk-review-note">Catatan: {c.note}</span>}
             </div>
       <span className="dk-review-item-total">{money(discounted * c.qty)}</span>
                 </div>
@@ -229,7 +240,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
           {formError && <div className="dk-form-error">{formError}</div>}
           <div className="dk-sheet-footer">
             <button className="dk-btn-half dk-btn-half-back" onClick={() => setStep('info')}>
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <MaterialIcon>arrow_back</MaterialIcon>
               Kembali
             </button>
             <button className="dk-btn-pay" disabled={paymentLoading} onClick={async () => {
@@ -254,8 +265,8 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
   if (step === 'info') {
     return (
       <div className="dk-overlay" onClick={onClose}>
-        <div className="dk-review-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="dk-review-header"><h2>Data Pengiriman</h2><button className="dk-btn-close" onClick={onClose}>✕</button></div>
+        <div className="dk-review-sheet dk-shipping-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="dk-review-header"><h2>Data Pengiriman</h2><button className="dk-btn-close" onClick={onClose}><MaterialIcon>close</MaterialIcon></button></div>
 
           <div className="dk-form-group">
             <label>Nama Pemesan</label>
@@ -272,13 +283,19 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
           </div>
 
           <div className="dk-form-group">
-            <label>Kode Pos</label>
-            <input className="dk-form-input" inputMode="numeric" maxLength="5" placeholder="15560" value={customerPostalCode} onChange={(e) => { setCustomerPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5)); setFormError(''); }} />
-            <label>Kelurahan</label>
-            <select className="dk-form-input" value={selectedLocation?.kelurahan || ''} onChange={(e) => setSelectedLocation(locations.find((loc) => loc.kelurahan === e.target.value) || null)}>
-              <option value="">Pilih kelurahan</option>
-              {locations.map((loc) => <option key={`${loc.postalCode}-${loc.kelurahan}`} value={loc.kelurahan}>{loc.kelurahan}</option>)}
-            </select>
+            <div className="dk-address-grid">
+              <div>
+                <label>Kode Pos</label>
+                <input className="dk-form-input" inputMode="numeric" maxLength="5" placeholder="Cth: 12345" value={customerPostalCode} onChange={(e) => { setCustomerPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5)); setFormError(''); }} />
+              </div>
+              <div>
+                <label>Kelurahan</label>
+                <select className="dk-form-input" value={selectedLocation?.kelurahan || ''} onChange={(e) => setSelectedLocation(locations.find((loc) => loc.kelurahan === e.target.value) || null)}>
+                  <option value="">Pilih kelurahan</option>
+                  {locations.map((loc) => <option key={`${loc.postalCode}-${loc.kelurahan}`} value={loc.kelurahan}>{loc.kelurahan}</option>)}
+                </select>
+              </div>
+            </div>
             {customerPostalCode.length === 5 && !locations.length && <div className="dk-address-preview dk-address-warning">Kode pos tidak ditemukan. Cek lagi kode pos.</div>}
             <div className="dk-address-grid">
               <div>
@@ -295,19 +312,19 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
               </div>
             </div>
             <label>Alamat Detail</label>
-            <textarea className="dk-form-input dk-form-textarea" placeholder="Jalan, no rumah, patokan..." value={customerAddress} onChange={(e) => { setCustomerAddress(e.target.value); setFormError(''); }} rows={3} />
+            <textarea className="dk-form-input dk-form-textarea" placeholder="Nama jalan, gedung, no. rumah/unit..." value={customerAddress} onChange={(e) => { setCustomerAddress(e.target.value); setFormError(''); }} rows={2} />
           </div>
 
           <div className="dk-form-group">
             <label>Catatan Pesanan (opsional)</label>
-            <input className="dk-form-input" placeholder="Misal: titip ke satpam, jangan pakai bel..." value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} />
+            <textarea className="dk-form-input dk-form-textarea" placeholder="Tinggalkan catatan untuk pengemudi atau restoran..." value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} rows={2} />
           </div>
 
           {formError && <div className="dk-form-error">{formError}</div>}
 
           <div className="dk-sheet-footer">
             <button className="dk-btn-half dk-btn-half-back" onClick={() => setStep('cart')}>
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <MaterialIcon>arrow_back</MaterialIcon>
               Kembali
             </button>
             <button className="dk-btn-pay" onClick={proceedToConfirm}>Lanjut ke Pembayaran</button>
@@ -320,8 +337,8 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
   // ── STEP: CART ──
   return (
     <div className="dk-overlay" onClick={onClose}>
-      <div className="dk-review-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="dk-review-header"><h2>Pesanan Kamu</h2><button className="dk-btn-close" onClick={onClose}>✕</button></div>
+        <div className="dk-review-sheet dk-checkout-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="dk-review-header"><h2>Pesanan Anda</h2><button className="dk-btn-close" onClick={onClose}><MaterialIcon>close</MaterialIcon></button></div>
         <div className="dk-review-items">
           {cart.map((c) => {
             const discounted = getDiscountedPrice(c);
@@ -337,7 +354,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
                 </div>
                 <div className="dk-review-stepper">
                   <div className="dk-stepper">
-                    <button onClick={() => onDecrease(c.id)}>−</button><span>{c.qty}</span><button onClick={() => onIncrease(c.id)}>+</button>
+                    <button onClick={() => onDecrease(c.id)}><MaterialIcon>remove</MaterialIcon></button><span>{c.qty}</span><button onClick={() => onIncrease(c.id)}><MaterialIcon>add</MaterialIcon></button>
                   </div>
                   <span className="dk-review-item-total">{money(discounted * c.qty)}</span>
                 </div>
@@ -352,7 +369,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
         </div>
         <div className="dk-sheet-footer">
           <button className="dk-btn-half dk-btn-half-back" onClick={onClose}>
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <MaterialIcon>home</MaterialIcon>
             Kembali
           </button>
           <button className="dk-btn-pay" onClick={() => setStep('info')}>Isi Data Pengiriman</button>
@@ -368,7 +385,7 @@ function CartBar({ itemCount, total, onReview }) {
     return (
       <div className="dk-cartbar dk-cartbar-empty">
         <div className="dk-cartbar-info">
-          <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M2 3H4.5L5.5 7.5M5.5 7.5L7.2 15.2C7.35 15.82 7.9 16.25 8.54 16.25H17.5C18.14 16.25 18.69 15.82 18.84 15.2L20.5 7.5H5.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="19.25" r="1.25" fill="currentColor"/><circle cx="17" cy="19.25" r="1.25" fill="currentColor"/></svg>
+          <MaterialIcon>shopping_cart</MaterialIcon>
           <span>Pilih menu untuk memulai pesanan</span>
         </div>
       </div>
@@ -378,8 +395,8 @@ function CartBar({ itemCount, total, onReview }) {
     <div className="dk-cartbar dk-cartbar-filled">
       <div className="dk-cartbar-info"><div className="dk-cartbar-count">{itemCount} item</div><div className="dk-cartbar-total">{money(total)}</div></div>
       <button className="dk-btn-pay" onClick={onReview}>
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.5"/><rect x="6" y="6" width="3" height="3" rx="1" fill="currentColor"/><rect x="11" y="6" width="3" height="3" rx="1" fill="currentColor"/><rect x="6" y="11" width="3" height="3" rx="1" fill="currentColor"/><rect x="11" y="11" width="3" height="3" rx="1" fill="currentColor"/></svg>
-        Bayar
+        <MaterialIcon>point_of_sale</MaterialIcon>
+        Checkout
       </button>
     </div>
   );

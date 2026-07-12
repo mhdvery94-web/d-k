@@ -79,7 +79,7 @@ function ensurePdfSpace(doc, y, needed = 12) {
 }
 
 function drawPdfHeader(doc, title, periodLabel) {
-  doc.setDrawColor(45, 139, 141);
+  doc.setDrawColor(0, 103, 105);
   doc.setFillColor(228, 241, 240);
   doc.rect(14, 12, 182, 26, 'FD');
   doc.setFont('helvetica', 'bold');
