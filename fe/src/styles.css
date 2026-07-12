@@ -2593,3 +2593,242 @@ img { display: block; max-width: 100%; }
   color: var(--dk-text-muted);
   font-size: 14px;
 }
+
+/* Admin layout inversion and flush shell */
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  background: var(--dk-bg-page);
+  overflow-x: hidden;
+}
+
+.dk-app-admin {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding-bottom: 0;
+  background: var(--dk-bg-page);
+  overflow-x: clip;
+}
+
+.dk-app-admin .admin-header,
+.dk-app-admin .dk-header-top,
+.dk-app-admin .dk-brand-title,
+.dk-app-admin .dk-header-actions,
+.dk-app-admin .dk-admin-nav,
+.dk-app-admin .dk-admin-nav-btn,
+.dk-app-admin .dk-admin-content,
+.dk-app-admin .dk-dashboard,
+.dk-app-admin .dk-dashboard-header,
+.dk-app-admin .dk-dashboard-summary,
+.dk-app-admin .dk-dashboard-accordion,
+.dk-app-admin .dk-admin-toolbar,
+.dk-app-admin .dk-admin-tabs,
+.dk-app-admin .dk-report-toolbar-actions,
+.dk-app-admin .dk-report-action-buttons,
+.dk-app-admin .dk-report-date-range {
+  background: #fff;
+}
+
+.dk-app-admin .admin-header {
+  box-shadow: none;
+  border-bottom: 1px solid var(--dk-border-light);
+}
+
+.dk-app-admin .dk-header-top {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.dk-app-admin .dk-admin {
+  min-height: calc(100vh - 81px);
+  padding: 0;
+  background: var(--dk-bg-page);
+}
+
+.dk-app-admin .dk-admin-nav {
+  width: 100%;
+  justify-content: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--dk-border-light);
+  scrollbar-width: none;
+}
+
+.dk-app-admin .dk-admin-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dk-app-admin .dk-admin-nav-btn {
+  min-height: 52px;
+  padding-inline: 18px;
+}
+
+.dk-app-admin .dk-admin-content,
+.dk-app-admin .dk-orders-page {
+  width: min(1180px, calc(100% - 32px));
+  margin: 16px auto 0;
+  padding: 20px;
+  border: 1px solid var(--dk-border-light);
+  box-shadow: var(--dk-shadow-sm);
+}
+
+.dk-app-admin .dk-orders-page {
+  display: block;
+}
+
+.dk-app-admin .dk-dashboard {
+  padding: 0;
+}
+
+.dk-app-admin .dk-dashboard-header,
+.dk-app-admin .dk-dashboard-summary,
+.dk-app-admin .dk-dashboard-accordion,
+.dk-app-admin .dk-admin-toolbar,
+.dk-app-admin .dk-admin-tabs {
+  max-width: 100%;
+}
+
+.dk-app-admin .dk-summary-card,
+.dk-app-admin .dk-accordion-item,
+.dk-app-admin .dk-accordion-header,
+.dk-app-admin .dk-accordion-content,
+.dk-app-admin .dk-status-item,
+.dk-app-admin .dk-recent-order-item,
+.dk-app-admin .dk-popular-menu-item,
+.dk-app-admin .dk-admin-order-card,
+.dk-app-admin .dk-admin-order-head,
+.dk-app-admin .dk-admin-order-customer,
+.dk-app-admin .dk-admin-order-detail,
+.dk-app-admin .dk-admin-order-address,
+.dk-app-admin .dk-admin-order-items,
+.dk-app-admin .dk-admin-order-items span,
+.dk-app-admin .dk-seller-checklist,
+.dk-app-admin .dk-seller-checkline,
+.dk-app-admin .dk-seller-checks,
+.dk-app-admin .dk-admin-table-wrap,
+.dk-app-admin .dk-admin-table,
+.dk-app-admin .dk-admin-table th,
+.dk-app-admin .dk-admin-table td,
+.dk-app-admin .dk-admin-table th:last-child,
+.dk-app-admin .dk-admin-table td:last-child,
+.dk-app-admin .dk-report,
+.dk-app-admin .dk-report-control-panel,
+.dk-app-admin .dk-report-section,
+.dk-app-admin .dk-report-summary-item,
+.dk-app-admin .dk-report-doc-footer,
+.dk-app-admin .dk-report-table th,
+.dk-app-admin .dk-report-table tfoot td,
+.dk-app-admin .dk-admin-form,
+.dk-app-admin .dk-settings-modal,
+.dk-app-admin .dk-modal,
+.dk-app-admin .dk-modal-header,
+.dk-app-admin .dk-modal-body,
+.dk-app-admin .dk-icon-option,
+.dk-app-admin .dk-image-option,
+.dk-app-admin .dk-upload-btn,
+.dk-app-admin .dk-discount-input-row,
+.dk-app-admin .dk-search-row,
+.dk-app-admin .dk-date-input,
+.dk-app-admin .dk-report-select,
+.dk-app-admin .dk-period-btn,
+.dk-app-admin .dk-btn-outline,
+.dk-app-admin .dk-btn-cancel,
+.dk-app-admin .dk-admin-tab {
+  background-color: #fff;
+}
+
+.dk-app-admin .dk-admin-table tr:hover td,
+.dk-app-admin .dk-admin-tab:hover,
+.dk-app-admin .dk-btn-outline:hover,
+.dk-app-admin .dk-btn-cancel:hover,
+.dk-app-admin .dk-accordion-header:hover {
+  background-color: var(--dk-bg-hover);
+}
+
+.dk-app-admin .dk-admin-tab-active,
+.dk-app-admin .dk-period-btn.active {
+  background-color: var(--dk-blue);
+  color: #fff;
+  border-color: var(--dk-blue);
+}
+
+.dk-app-admin .dk-dashboard-header {
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--dk-border-light);
+}
+
+.dk-app-admin .dk-dashboard-summary {
+  margin-bottom: 18px;
+}
+
+.dk-app-admin .dk-summary-card,
+.dk-app-admin .dk-accordion-item,
+.dk-app-admin .dk-admin-order-card,
+.dk-app-admin .dk-admin-table-wrap,
+.dk-app-admin .dk-report,
+.dk-app-admin .dk-report-control-panel {
+  border-color: var(--dk-border-light);
+  box-shadow: none;
+}
+
+.dk-app-admin .dk-summary-card:hover,
+.dk-app-admin .dk-admin-order-card:hover {
+  box-shadow: var(--dk-shadow-sm);
+}
+
+.dk-app-admin .dk-admin-order-list,
+.dk-app-admin .dk-dashboard-accordion,
+.dk-app-admin .dk-seller-checklist-items,
+.dk-app-admin .dk-recent-orders,
+.dk-app-admin .dk-popular-menus,
+.dk-app-admin .dk-low-stock-list {
+  overflow: hidden;
+}
+
+.dk-app-admin .dk-admin-order-card,
+.dk-app-admin .dk-admin-table-wrap,
+.dk-app-admin .dk-report,
+.dk-app-admin .dk-report-control-panel,
+.dk-app-admin .dk-summary-card,
+.dk-app-admin .dk-accordion-item {
+  overflow: hidden;
+}
+
+.dk-app-admin .dk-admin-actions,
+.dk-app-admin .dk-admin-order-actions {
+  align-items: stretch;
+}
+
+.dk-app-admin .dk-admin-order-actions .dk-btn-edit,
+.dk-app-admin .dk-admin-order-actions .dk-btn-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  padding: 10px 12px;
+}
+
+@media (max-width: 720px) {
+  .dk-app-admin .dk-admin-nav {
+    justify-content: flex-start;
+  }
+
+  .dk-app-admin .dk-admin-content,
+  .dk-app-admin .dk-orders-page {
+    width: 100%;
+    margin-top: 0;
+    border-left: 0;
+    border-right: 0;
+    padding: 16px 14px;
+  }
+}
+
+@supports not (overflow: clip) {
+  .dk-app-admin {
+    overflow-x: hidden;
+  }
+}
