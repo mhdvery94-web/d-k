@@ -652,8 +652,7 @@ function Header({ onLogout, onSettings }) {
       <div className="dk-header-top">
         <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
         <div className="dk-brand-title">
-          <h1>DAPUR - KEMAS</h1>
-          <p>Panel Admin</p>
+          <h1>PANEL ADMIN</h1>
         </div>
         <div className="dk-header-actions">
           <button className="dk-btn-nav" onClick={onSettings} title="Pengaturan akun">Akun</button>
