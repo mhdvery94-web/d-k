@@ -563,6 +563,7 @@ img { display: block; max-width: 100%; }
 
 /* Footer: background full-width nempel ke tepi bawah, tombol dibatasi via inner wrapper */
 .dk-shipping-sheet .dk-sheet-footer {
+  display: block;
   flex: none;
   position: static;
   z-index: 3;
@@ -577,12 +578,26 @@ img { display: block; max-width: 100%; }
   width: 100%;
   max-width: 768px;
   margin: 0 auto;
-  padding: 24px 16px max(24px, env(safe-area-inset-bottom));
+  padding: 16px 16px max(16px, env(safe-area-inset-bottom));
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: stretch;
   gap: 12px;
 }
-.dk-shipping-sheet .dk-sheet-footer-inner > button { width: 100%; margin: 0; justify-content: center; }
+.dk-shipping-sheet .dk-sheet-footer-inner > button {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  justify-content: center;
+}
+.dk-shipping-sheet .dk-sheet-footer-inner .dk-btn-pay {
+  padding-inline: 12px;
+  font-size: 15px;
+  line-height: 18px;
+  text-align: center;
+  white-space: normal;
+}
 
 .dk-review-header {
   display: flex;
@@ -1839,6 +1854,18 @@ img { display: block; max-width: 100%; }
   .dk-report-summary-grid { grid-template-columns: 1fr 1fr; }
   .dk-report-doc-header { flex-direction: column; align-items: flex-start; gap: 10px; }
   .dk-report-doc-title { text-align: left; }
+}
+
+@media (max-width: 340px) {
+  .dk-shipping-sheet .dk-sheet-footer-inner {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .dk-shipping-sheet .dk-sheet-footer-inner .dk-btn-pay,
+  .dk-shipping-sheet .dk-sheet-footer-inner .dk-btn-half {
+    min-height: 44px;
+  }
 }
 
 /* ═══════════════ PRINT STYLES ═══════════════ */
