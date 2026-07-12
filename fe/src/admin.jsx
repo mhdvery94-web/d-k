@@ -199,11 +199,14 @@ function buildSellerChecklistPdf(order, state = {}) {
       doc.line(20, y - 0.3, 22, y - 2.7);
     }
     doc.text(label, 26, y);
-    doc.text(`Petugas ${index + 1}: ____________________`, 118, y);
+    const officerKey = `officer${index + 1}`;
+    const officerName = state[officerKey] ? String(state[officerKey]) : '____________________';
+    doc.text(`Petugas ${index + 1}: ${officerName}`, 118, y);
     y += 9;
   });
   y += 5;
-  doc.text('Catatan: ______________________________________________________', 14, y);
+  const notesText = state.notes ? String(state.notes) : '______________________________________________________';
+  doc.text(`Catatan: ${notesText}`, 14, y);
 
   drawPdfFooter(doc);
   return doc;
@@ -669,14 +672,12 @@ function Header({ onLogout, onSettings }) {
         </div>
 
         <div className="dk-header-actions">
-          <button className="dk-btn-nav" onClick={onSettings} title="Pengaturan akun">
+          <button className="dk-btn-nav dk-btn-nav-icon" onClick={onSettings} title="Pengaturan akun">
             <span className="material-symbols-outlined">settings</span>
-            Akun
           </button>
           
-          <button className="dk-btn-nav" onClick={handleLogout}>
+          <button className="dk-btn-nav dk-btn-nav-icon" onClick={handleLogout} title="Keluar">
             <span className="material-symbols-outlined">logout</span>
-            Keluar
           </button>
         </div>
 
@@ -731,7 +732,16 @@ function OrderManager() {
       if (filter) params.set('status', filter);
       if (search) params.set('search', search);
       const result = await apiCall(`/orders?${params.toString()}`);
-      setOrders(result.data || []);
+      let list = result.data || [];
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        list = list.filter((o) =>
+          String(o.orderNumber).toLowerCase().includes(q) ||
+          String(o.customerName).toLowerCase().includes(q) ||
+          String(o.customerPhone).toLowerCase().includes(q)
+        );
+      }
+      setOrders(list);
     } catch (err) {
       setError(err.message || 'Gagal memuat pesanan');
     } finally {
@@ -783,18 +793,23 @@ function OrderManager() {
       <div className="dk-admin-toolbar dk-orders-toolbar">
         <input
           className="dk-search-input"
-          placeholder="Cari nomor order"
+          placeholder="Cari order, nama, atau telepon..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') loadOrders(); }}
         />
-        <button className="dk-btn-outline" onClick={loadOrders}>Cari</button>
-      </div>
-
-      <div className="dk-admin-tabs dk-order-status-tabs">
-        {[['', 'Semua'], ['confirmed', 'Baru'], ['preparing', 'Diproses'], ['packaging', 'Dikemas'], ['delivering', 'Dikirim'], ['completed', 'Selesai'], ['cancelled', 'Dibatalkan']].map(([value, label]) => (
-          <button key={value} className={`dk-admin-tab ${filter === value ? 'dk-admin-tab-active' : ''}`} onClick={() => setFilter(value)}>{label}</button>
-        ))}
+        <select className="dk-order-filter-select" value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <option value="">Semua Status</option>
+          <option value="confirmed">Baru</option>
+          <option value="preparing">Diproses</option>
+          <option value="packaging">Dikemas</option>
+          <option value="delivering">Dikirim</option>
+          <option value="completed">Selesai</option>
+          <option value="cancelled">Dibatalkan</option>
+        </select>
+        <button className="dk-btn-outline" onClick={loadOrders}>
+          <span className="material-symbols-outlined" style={{fontSize:18}}>search</span>
+        </button>
       </div>
 
       {error && <div className="dk-login-error">{error}</div>}
@@ -866,6 +881,35 @@ function OrderManager() {
                         <span>Cek 2 packing lengkap</span>
                       </label>
                     </div>
+                    <div className="dk-seller-extra-fields">
+                      <div className="dk-seller-field">
+                        <span className="material-symbols-outlined" style={{fontSize:16}}>badge</span>
+                        <input
+                          type="text"
+                          placeholder="Nama Petugas 1"
+                          value={checklistState.officer1 || ''}
+                          onChange={(e) => updateSellerChecklist(order.id, 'officer1', e.target.value)}
+                        />
+                      </div>
+                      <div className="dk-seller-field">
+                        <span className="material-symbols-outlined" style={{fontSize:16}}>badge</span>
+                        <input
+                          type="text"
+                          placeholder="Nama Petugas 2"
+                          value={checklistState.officer2 || ''}
+                          onChange={(e) => updateSellerChecklist(order.id, 'officer2', e.target.value)}
+                        />
+                      </div>
+                      <div className="dk-seller-field dk-seller-field-full">
+                        <span className="material-symbols-outlined" style={{fontSize:16}}>notes</span>
+                        <input
+                          type="text"
+                          placeholder="Catatan..."
+                          value={checklistState.notes || ''}
+                          onChange={(e) => updateSellerChecklist(order.id, 'notes', e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="dk-admin-actions dk-admin-order-actions">
@@ -933,18 +977,26 @@ function MenuForm({ initial, categories, onSave, onCancel, onUploadImage }) {
     <div className="dk-overlay" onClick={onCancel}>
       <form className="dk-admin-form" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <h3>{isEdit ? 'Edit Menu' : 'Tambah Menu'}</h3>
-        <label>Kategori</label>
-        <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-          {categories.map((c) => <option key={c.name} value={c.name}>{c.icon} {c.name}</option>)}
-        </select>
-        <label>Nama Menu</label>
-        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nasi Goreng Spesial" required />
-        <label>Harga (Rp)</label>
-        <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="15000" required />
-        <label>Stock</label>
-        <input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} placeholder="20" required />
+        <div className="dk-form-icon-row">
+          <span className="material-symbols-outlined">category</span>
+          <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+            {categories.map((c) => <option key={c.name} value={c.name}>{c.icon} {c.name}</option>)}
+          </select>
+        </div>
+        <div className="dk-form-icon-row">
+          <span className="material-symbols-outlined">restaurant</span>
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nama Menu" required />
+        </div>
+        <div className="dk-form-icon-row">
+          <span className="material-symbols-outlined">payments</span>
+          <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Harga (Rp)" required />
+        </div>
+        <div className="dk-form-icon-row">
+          <span className="material-symbols-outlined">inventory_2</span>
+          <input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} placeholder="Stock" required />
+        </div>
         <div className="dk-toggle-row">
-          <label>Diskon</label>
+          <span className="dk-form-icon-label"><span className="material-symbols-outlined">percent</span> Diskon</span>
           <label className="dk-toggle">
             <input type="checkbox" checked={discountEnabled} onChange={(e) => setDiscountEnabled(e.target.checked)} />
             <span className="dk-toggle-slider"></span>
@@ -952,18 +1004,21 @@ function MenuForm({ initial, categories, onSave, onCancel, onUploadImage }) {
         </div>
         {discountEnabled && (
           <div className="dk-discount-input-row">
-            <label>Persentase Diskon (%)</label>
-            <input type="number" min="1" max="100" value={form.discountPercent} onChange={(e) => setForm({ ...form, discountPercent: e.target.value })} placeholder="5" required />
+            <div className="dk-form-icon-row">
+              <span className="material-symbols-outlined">percent</span>
+              <input type="number" min="1" max="100" value={form.discountPercent} onChange={(e) => setForm({ ...form, discountPercent: e.target.value })} placeholder="Persentase" required />
+            </div>
           </div>
         )}
-        <label>Deskripsi</label>
-        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Deskripsi singkat..." required />
-        <label>Gambar</label>
-        <div className="dk-upload-row">
-          <label className="dk-upload-btn">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V10M4 7L8 3L12 7M2 13H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div className="dk-form-icon-row dk-form-icon-row-top">
+          <span className="material-symbols-outlined">description</span>
+          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Deskripsi singkat..." required />
+        </div>
+        <div className="dk-upload-row" onClick={(e) => e.stopPropagation()}>
+          <label className="dk-upload-btn" onClick={(e) => e.stopPropagation()}>
+            <span className="material-symbols-outlined" style={{fontSize:18}}>cloud_upload</span>
             {uploading ? 'Mengupload...' : 'Upload Foto'}
-            <input type="file" accept="image/*" onChange={async (e) => {
+            <input type="file" accept="image/*" onClick={(e) => e.stopPropagation()} onChange={async (e) => {
               const file = e.target.files?.[0];
               if (file) {
                 setUploading(true);
@@ -986,18 +1041,17 @@ function MenuForm({ initial, categories, onSave, onCancel, onUploadImage }) {
             </div>
           )}
         </div>
-        <label>atau pilih dari galeri:</label>
         <div className="dk-image-picker">
           {IMAGE_KEYS.map((key) => (
             <button key={key} type="button" className={`dk-image-option ${form.image === key ? 'dk-image-selected' : ''}`} onClick={() => setForm({ ...form, image: key })}>
               <img src={getMenuImage(key)} alt="" onError={(e) => { e.target.src = FALLBACK_IMG; }} />
             </button>
           ))}
-  </div>
+        </div>
         {error && <div className="dk-form-error">{error}</div>}
         <div className="dk-form-actions">
-        <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
-     <button type="submit" className="dk-btn-save" disabled={saving || uploading}>{saving ? 'Menyimpan...' : (isEdit ? 'Simpan' : 'Tambah')}</button>
+          <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
+          <button type="submit" className="dk-btn-save" disabled={saving || uploading}>{saving ? 'Menyimpan...' : (isEdit ? 'Simpan' : 'Tambah')}</button>
         </div>
       </form>
     </div>
@@ -1012,9 +1066,10 @@ function CategoryForm({ initial, onSave, onCancel, onDelete }) {
     <div className="dk-overlay" onClick={onCancel}>
       <form className="dk-admin-form" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
   <h3>{initial ? 'Edit Kategori' : 'Tambah Kategori'}</h3>
-        <label>Nama Kategori</label>
-        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nama kategori" required />
-        <label>Icon</label>
+        <div className="dk-form-icon-row">
+          <span className="material-symbols-outlined">label</span>
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nama kategori" required />
+        </div>
         <div className="dk-icon-picker">
           {ICONS.map((icon) => (
        <button key={icon} type="button" className={`dk-icon-option ${form.icon === icon ? 'dk-icon-selected' : ''}`} onClick={() => setForm({ ...form, icon })}>{icon}</button>
@@ -1024,7 +1079,9 @@ function CategoryForm({ initial, onSave, onCancel, onDelete }) {
         <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
    <button type="submit" className="dk-btn-save">{initial ? 'Simpan' : 'Tambah'}</button>
  {initial && onDelete && (
-     <button type="button" className="dk-btn-delete" onClick={() => { if (confirm(`Hapus kategori "${initial.name}"?`)) onDelete(initial.name); }}>Hapus</button>
+     <button type="button" className="dk-btn-delete-min" onClick={() => { if (confirm(`Hapus kategori "${initial.name}"?`)) onDelete(initial.name); }} title="Hapus kategori">
+       <span className="material-symbols-outlined">delete</span>
+     </button>
    )}
         </div>
       </form>
@@ -1560,23 +1617,31 @@ function AdminDashboard({ onLogout, onSettings }) {
 
         {tab === 'menu' && (
           <div className="dk-admin-content">
-            <div className="dk-admin-toolbar">
-              <button className="dk-btn-outline" onClick={() => { setEditingCat(null); setShowCatForm(true); }}>+ Kategori</button>
-              <button className="dk-btn-primary" onClick={() => { setEditingMenu(null); setShowMenuForm(true); }}>+ Tambah Menu</button>
+            <div className="dk-admin-toolbar dk-menu-toolbar">
+              <button className="dk-btn-outline dk-menu-toolbar-btn" onClick={() => { setEditingCat(null); setShowCatForm(true); }}>
+                <span className="material-symbols-outlined" style={{fontSize:16}}>add</span> Kategori
+              </button>
+              <button className="dk-btn-primary dk-menu-toolbar-btn" onClick={() => { setEditingMenu(null); setShowMenuForm(true); }}>
+                <span className="material-symbols-outlined" style={{fontSize:16}}>add</span> Tambah Menu
+              </button>
             </div>
-            <div className="dk-admin-tabs">
+            <div className="dk-category-span-list">
               {menus.map((cat) => (
-                <button key={cat.name} className={`dk-admin-tab ${activeCat === cat.name ? 'dk-admin-tab-active' : ''}`} onClick={() => setActiveCat(cat.name)}>
+                <span
+                  key={cat.name}
+                  className={`dk-category-span ${activeCat === cat.name ? 'dk-category-span-active' : ''}`}
+                  onClick={() => setActiveCat(cat.name)}
+                >
                   <span className="dk-category-code">{cat.icon}</span> {cat.name}
-                  <span className="dk-admin-tab-count">{cat.items.length}</span>
-                  <span className="dk-admin-tab-actions" onClick={(e) => { e.stopPropagation(); setEditingCat(cat); setShowCatForm(true); }} title="Edit">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                  <small>{cat.items.length}</small>
+                  <span className="dk-category-span-edit" onClick={(e) => { e.stopPropagation(); setEditingCat(cat); setShowCatForm(true); }} title="Edit">
+                    <span className="material-symbols-outlined" style={{fontSize:14}}>edit</span>
                   </span>
-                </button>
+                </span>
               ))}
             </div>
             {category && (
-              <div className="dk-admin-table-wrap dk-admin-table-scroll">
+              <ScrollView className="dk-menu-table-scroll">
                 <table className="dk-admin-table">
                   <thead>
                     <tr>
@@ -1601,8 +1666,12 @@ function AdminDashboard({ onLogout, onSettings }) {
                           <td>{item.stock <= 0 ? <span className="dk-stock-badge">Habis</span> : item.stock}</td>
                           <td>
                             <div className="dk-admin-actions">
-                              <button className="dk-btn-edit" title="Edit" onClick={() => { setEditingMenu(item); setShowMenuForm(true); }}>Edit</button>
-                              <button className="dk-btn-delete" title="Hapus" onClick={() => { if (confirm(`Hapus "${item.name}"?`)) deleteMenu(item.id, activeCat); }}>Hapus</button>
+                              <button className="dk-btn-edit" title="Edit" onClick={() => { setEditingMenu(item); setShowMenuForm(true); }}>
+                                <span className="material-symbols-outlined" style={{fontSize:18}}>edit</span>
+                              </button>
+                              <button className="dk-btn-delete-min" title="Hapus" onClick={() => { if (confirm(`Hapus "${item.name}"?`)) deleteMenu(item.id, activeCat); }}>
+                                <span className="material-symbols-outlined" style={{fontSize:18}}>delete</span>
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1610,7 +1679,7 @@ function AdminDashboard({ onLogout, onSettings }) {
                     )}
                   </tbody>
                 </table>
-              </div>
+              </ScrollView>
             )}
           </div>
         )}
@@ -1633,18 +1702,13 @@ function AdminDashboard({ onLogout, onSettings }) {
                   <option value="yearly">Tahunan</option>
                 </select>
               </div>
-              <div className="dk-report-toolbar-actions">
-                <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} className="dk-date-input" />
-                <div className="dk-report-action-buttons">
-                  <button className="dk-btn-outline" onClick={handlePrint}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6V2H12V6M4 12H3C2.45 12 2 11.55 2 11V8C2 7.45 2.45 7 3 7H13C13.55 7 14 7.45 14 8V11C14 11.55 13.55 12 13 12H12M4 12H12V14H4V12Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-                    Cetak PDF
-                  </button>
-                  <button className="dk-btn-primary" onClick={handleDownloadPDF}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V10M4 7L8 11L12 7M2 13H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Simpan PDF
-                  </button>
-                </div>
+              <div className="dk-report-action-grid">
+                <button className="dk-btn-order-action dk-btn-order-secondary" onClick={handlePrint}>
+                  <span className="material-symbols-outlined" style={{fontSize:16}}>print</span> Cetak PDF
+                </button>
+                <button className="dk-btn-order-action dk-btn-order-primary" onClick={handleDownloadPDF}>
+                  <span className="material-symbols-outlined" style={{fontSize:16}}>download</span> Simpan PDF
+                </button>
               </div>
             </div>
             <div className="dk-search-row dk-report-search no-print">
@@ -1662,6 +1726,7 @@ function AdminDashboard({ onLogout, onSettings }) {
             </div>
 
             {/* Area yang dicetak */}
+            <ScrollView className="dk-report-scroll">
             <div className="dk-report" id="printable-report">
               <div className="dk-report-doc-header">
                 <div className="dk-report-doc-brand">
@@ -1733,6 +1798,7 @@ function AdminDashboard({ onLogout, onSettings }) {
                 <span>Dapur Kemas - Laporan dibuat otomatis oleh sistem</span>
               </div>
             </div>
+            </ScrollView>
           </div>
         )}
       </div>
