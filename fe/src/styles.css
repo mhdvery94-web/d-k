@@ -2306,29 +2306,23 @@ img { display: block; max-width: 100%; }
   background: var(--dk-blue-dark);
 }
 
-/* --- UPDATE: Summary Card 2 Baris & 2 Kolom --- */
+/* --- UPDATE: Summary Card 2 Baris & 2 Kolom (Mobile First) --- */
 .dk-dashboard-summary {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-/* Jika layar mengecil (HP), ubah jadi 1 kolom ke bawah */
-@media (max-width: 600px) {
-  .dk-dashboard-summary {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(2, 1fr); /* Selalu 2 kolom dari ukuran mobile */
+  gap: 12px; /* Jarak antar kotak dirapatkan agar pas di HP */
+  margin-bottom: 24px;
 }
 
 .dk-summary-card {
   background: white;
   border: 1px solid var(--dk-border);
-  border-radius: 0;
-  padding: 20px;
+  border-radius: 4px; 
+  padding: 12px; /* Padding dikecilkan agar tidak makan tempat di layar HP */
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column; /* Icon dan teks ditumpuk atas-bawah (wajib untuk 2x2 di HP) */
+  align-items: flex-start;
+  gap: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   transition: box-shadow 0.2s;
 }
@@ -2338,36 +2332,59 @@ img { display: block; max-width: 100%; }
 }
 
 .dk-summary-icon {
-  font-size: 32px;
-  width: 56px;
-  height: 56px;
+  font-size: 24px; /* Icon diperkecil sedikit */
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--dk-blue-pale);
-  border-radius: 0;
+  border-radius: 4px;
 }
 
 .dk-summary-content {
   flex: 1;
+  width: 100%;
 }
 
 .dk-summary-label {
-  font-size: 13px;
+  font-size: 12px; /* Teks label diperkecil */
   color: var(--dk-text-muted);
-  margin-bottom: 4px;
-}
-
-.dk-summary-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--dk-text);
   margin-bottom: 2px;
 }
 
+.dk-summary-value {
+  font-size: 16px; /* Nilai angka diperkecil sedikit agar tidak overflow */
+  font-weight: 600;
+  color: var(--dk-text);
+  margin-bottom: 2px;
+  word-break: break-word; /* Mencegah nominal uang yang terlalu panjang menembus kotak */
+  line-height: 1.2;
+}
+
 .dk-summary-sub {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--dk-text-subtle);
+}
+
+/* (Opsional) Jika di layar monitor desktop ingin dikembalikan berjejer ke samping agar tidak terlalu kosong */
+@media (min-width: 768px) {
+  .dk-dashboard-summary {
+    gap: 16px;
+  }
+  .dk-summary-card {
+    flex-direction: row; /* Berjejer ke samping lagi */
+    align-items: center;
+    padding: 20px;
+  }
+  .dk-summary-icon {
+    font-size: 32px;
+    width: 56px;
+    height: 56px;
+  }
+  .dk-summary-label { font-size: 13px; }
+  .dk-summary-value { font-size: 20px; }
+  .dk-summary-sub { font-size: 13px; }
 }
 
 /* --- UPDATE: Accordion (Listing Buka Tutup) --- */
