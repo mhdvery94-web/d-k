@@ -17,8 +17,23 @@ function loadSellerChecklistStates() {
   }
 }
 
-function ScrollView({ className, children }) {
-  return <div className={`dk-scrollview ${className || ''}`.trim()}>{children}</div>;
+function ScrollView({ className, children, ...props }) {
+  return <div className={`dk-scrollview ${className || ''}`.trim()} {...props}>{children}</div>;
+}
+
+async function parseApiResponse(response, fallbackMessage) {
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (err) {
+    throw new Error(fallbackMessage);
+  }
+
+  if (!response.ok || !data.success) {
+    throw new Error(data?.message || fallbackMessage);
+  }
+
+  return data;
 }
 
 // Helper function for API calls with JWT
@@ -35,13 +50,7 @@ async function apiCall(endpoint, options = {}) {
     headers,
   });
 
-  const data = await response.json();
-
-  if (!data.success) {
-    throw new Error(data.message || 'Terjadi kesalahan');
-  }
-
-  return data;
+  return parseApiResponse(response, 'Terjadi kesalahan pada server');
 }
 
 async function uploadMenuImage(file) {
@@ -57,10 +66,7 @@ async function uploadMenuImage(file) {
     body: formData,
   });
 
-  const data = await response.json();
-  if (!data.success) {
-    throw new Error(data.message || 'Gagal mengupload gambar');
-  }
+  const data = await parseApiResponse(response, 'Gagal mengupload gambar');
 
   return data.data.imageUrl;
 }
@@ -757,8 +763,16 @@ function OrderManager() {
 
   async function updateStatus(order, status) {
     if (!confirm(`Ubah status ${order.orderNumber} menjadi ${status}?`)) return;
-    await apiCall(`/orders/${order.id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
-    loadOrders();
+    setLoading(true);
+    setError('');
+    try {
+      await apiCall(`/orders/${order.id}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+      await loadOrders();
+    } catch (err) {
+      setError(err.message || 'Gagal mengubah status pesanan');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function updateSellerChecklist(orderId, key, checked) {
@@ -1061,28 +1075,56 @@ function MenuForm({ initial, categories, onSave, onCancel, onUploadImage }) {
 /* ── Category Form ── */
 function CategoryForm({ initial, onSave, onCancel, onDelete }) {
   const [form, setForm] = useState(initial || { name: '', icon: 'FD' });
-  const submit = (e) => { e.preventDefault(); if (!form.name.trim()) return; onSave({ name: form.name, icon: form.icon }); };
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setSaving(true);
+    setError('');
+    try {
+      await onSave({ name: form.name.trim(), icon: form.icon });
+    } catch (err) {
+      setError(err.message || 'Gagal menyimpan kategori');
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!initial || !onDelete || !confirm(`Hapus kategori "${initial.name}"?`)) return;
+    setSaving(true);
+    setError('');
+    try {
+      await onDelete(initial.name);
+    } catch (err) {
+      setError(err.message || 'Gagal menghapus kategori');
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="dk-overlay" onClick={onCancel}>
       <form className="dk-admin-form" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-  <h3>{initial ? 'Edit Kategori' : 'Tambah Kategori'}</h3>
+        <h3>{initial ? 'Edit Kategori' : 'Tambah Kategori'}</h3>
         <div className="dk-form-icon-row">
           <span className="material-symbols-outlined">label</span>
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nama kategori" required />
+          <input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setError(''); }} placeholder="Nama kategori" required disabled={saving} />
         </div>
         <div className="dk-icon-picker">
           {ICONS.map((icon) => (
-       <button key={icon} type="button" className={`dk-icon-option ${form.icon === icon ? 'dk-icon-selected' : ''}`} onClick={() => setForm({ ...form, icon })}>{icon}</button>
+            <button key={icon} type="button" className={`dk-icon-option ${form.icon === icon ? 'dk-icon-selected' : ''}`} onClick={() => setForm({ ...form, icon })} disabled={saving}>{icon}</button>
         ))}
         </div>
-  <div className="dk-form-actions">
-        <button type="button" className="dk-btn-cancel" onClick={onCancel}>Batal</button>
-   <button type="submit" className="dk-btn-save">{initial ? 'Simpan' : 'Tambah'}</button>
- {initial && onDelete && (
-     <button type="button" className="dk-btn-delete-min" onClick={() => { if (confirm(`Hapus kategori "${initial.name}"?`)) onDelete(initial.name); }} title="Hapus kategori">
-       <span className="material-symbols-outlined">delete</span>
-     </button>
-   )}
+        {error && <div className="dk-form-error">{error}</div>}
+        <div className="dk-form-actions">
+          <button type="button" className="dk-btn-cancel" onClick={onCancel} disabled={saving}>Batal</button>
+          <button type="submit" className="dk-btn-save" disabled={saving}>{saving ? 'Menyimpan...' : (initial ? 'Simpan' : 'Tambah')}</button>
+          {initial && onDelete && (
+            <button type="button" className="dk-btn-delete-min" onClick={handleDelete} title="Hapus kategori" disabled={saving}>
+              <span className="material-symbols-outlined">delete</span>
+            </button>
+          )}
         </div>
       </form>
     </div>
@@ -1308,6 +1350,11 @@ function AdminDashboard({ onLogout, onSettings }) {
   const [reportDate, setReportDate] = useState(todayStr());
   const [reportPeriod, setReportPeriod] = useState('daily');
   const [orderSearch, setOrderSearch] = useState('');
+  const [menuError, setMenuError] = useState('');
+  const [menuNotice, setMenuNotice] = useState('');
+  const [menuBusy, setMenuBusy] = useState(false);
+  const [menuLoading, setMenuLoading] = useState(true);
+  const [reportError, setReportError] = useState('');
 
   const mapMenusFromApi = (list, categoryList = categories) => {
     const grouped = new Map();
@@ -1344,11 +1391,17 @@ function AdminDashboard({ onLogout, onSettings }) {
   };
 
   useEffect(() => {
-    loadCategories().then((next) => loadMenus(next)).catch(() => {});
+    setMenuLoading(true);
+    setMenuError('');
+    loadCategories()
+      .then((next) => loadMenus(next))
+      .catch((err) => setMenuError(err.message || 'Gagal memuat data menu'))
+      .finally(() => setMenuLoading(false));
   }, []);
 
   useEffect(() => {
-    if (categories.length) loadMenus().catch(() => {});
+    if (!categories.length) return;
+    loadMenus().catch((err) => setMenuError(err.message || 'Gagal memuat menu'));
   }, [categories.length]);
 
   useEffect(() => {
@@ -1463,6 +1516,7 @@ function AdminDashboard({ onLogout, onSettings }) {
   }
 
   useEffect(() => {
+    setReportError('');
     const { start, end } = getReportRange();
     apiCall(`/reports/sales?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`)
       .then((result) => {
@@ -1477,7 +1531,10 @@ function AdminDashboard({ onLogout, onSettings }) {
         }));
         setReportOrders(mapped);
       })
-      .catch(() => setReportOrders([]));
+      .catch((err) => {
+        setReportOrders([]);
+        setReportError(err.message || 'Gagal memuat laporan');
+      });
   }, [reportPeriod, reportDate]);
 
   let filteredOrders;
@@ -1526,45 +1583,110 @@ function AdminDashboard({ onLogout, onSettings }) {
   };
 
   const addMenu = async (data, catName) => {
-    await apiCall('/menus', { method: 'POST', body: JSON.stringify(toMenuPayload(data, catName)) });
-    await loadMenus();
+    setMenuBusy(true);
+    setMenuError('');
+    setMenuNotice('');
+    try {
+      await apiCall('/menus', { method: 'POST', body: JSON.stringify(toMenuPayload(data, catName)) });
+      await loadMenus();
+      setMenuNotice('Menu berhasil ditambahkan.');
+    } catch (err) {
+      setMenuError(err.message || 'Gagal menambahkan menu');
+      throw err;
+    } finally {
+      setMenuBusy(false);
+    }
   };
 
   const editMenu = async (id, data, catName) => {
-    await apiCall(`/menus/${id}`, { method: 'PUT', body: JSON.stringify(toMenuPayload(data, catName)) });
-    await loadMenus();
+    setMenuBusy(true);
+    setMenuError('');
+    setMenuNotice('');
+    try {
+      await apiCall(`/menus/${id}`, { method: 'PUT', body: JSON.stringify(toMenuPayload(data, catName)) });
+      await loadMenus();
+      setMenuNotice('Menu berhasil diperbarui.');
+    } catch (err) {
+      setMenuError(err.message || 'Gagal memperbarui menu');
+      throw err;
+    } finally {
+      setMenuBusy(false);
+    }
   };
 
   const deleteMenu = async (id) => {
-    await apiCall(`/menus/${id}`, { method: 'DELETE' });
-    await loadMenus();
+    setMenuBusy(true);
+    setMenuError('');
+    setMenuNotice('');
+    try {
+      await apiCall(`/menus/${id}`, { method: 'DELETE' });
+      await loadMenus();
+      setMenuNotice('Menu berhasil dihapus.');
+    } catch (err) {
+      setMenuError(err.message || 'Gagal menghapus menu');
+    } finally {
+      setMenuBusy(false);
+    }
   };
 
   const addCategory = async (data) => {
-    await apiCall('/categories', { method: 'POST', body: JSON.stringify(data) });
-    const next = await loadCategories();
-    setActiveCat(data.name);
-    await loadMenus(next);
+    setMenuBusy(true);
+    setMenuError('');
+    setMenuNotice('');
+    try {
+      await apiCall('/categories', { method: 'POST', body: JSON.stringify(data) });
+      const next = await loadCategories();
+      setActiveCat(data.name);
+      await loadMenus(next);
+      setMenuNotice('Kategori berhasil ditambahkan.');
+    } catch (err) {
+      setMenuError(err.message || 'Gagal menambahkan kategori');
+      throw err;
+    } finally {
+      setMenuBusy(false);
+    }
   };
 
   const editCategory = async (oldName, data) => {
     const category = categories.find((cat) => cat.name === oldName);
-    if (!category) return;
-    await apiCall(`/categories/${category.id}`, { method: 'PUT', body: JSON.stringify(data) });
-    const next = await loadCategories();
-    setActiveCat(data.name);
-  await loadMenus(next);
+    if (!category) throw new Error('Kategori tidak ditemukan');
+    setMenuBusy(true);
+    setMenuError('');
+    setMenuNotice('');
+    try {
+      await apiCall(`/categories/${category.id}`, { method: 'PUT', body: JSON.stringify(data) });
+      const next = await loadCategories();
+      setActiveCat(data.name);
+      await loadMenus(next);
+      setMenuNotice('Kategori berhasil diperbarui.');
+    } catch (err) {
+      setMenuError(err.message || 'Gagal memperbarui kategori');
+      throw err;
+    } finally {
+      setMenuBusy(false);
+    }
   };
 
   const deleteCategory = async (catName) => {
     const category = categories.find((cat) => cat.name === catName);
-    if (!category) return;
-    await apiCall(`/categories/${category.id}`, { method: 'DELETE' });
-    const next = await loadCategories();
-    if (next.length > 0) {
-      setActiveCat(next[0].name);
+    if (!category) throw new Error('Kategori tidak ditemukan');
+    setMenuBusy(true);
+    setMenuError('');
+    setMenuNotice('');
+    try {
+      await apiCall(`/categories/${category.id}`, { method: 'DELETE' });
+      const next = await loadCategories();
+      if (next.length > 0) {
+        setActiveCat(next[0].name);
+      }
+      await loadMenus(next);
+      setMenuNotice('Kategori berhasil dihapus.');
+    } catch (err) {
+      setMenuError(err.message || 'Gagal menghapus kategori');
+      throw err;
+    } finally {
+      setMenuBusy(false);
     }
-    await loadMenus(next);
   };
 
   const createCurrentReportPdf = () => buildReportPdf({
@@ -1617,28 +1739,33 @@ function AdminDashboard({ onLogout, onSettings }) {
 
         {tab === 'menu' && (
           <div className="dk-admin-content">
+            {menuError && <div className="dk-login-error dk-admin-feedback">{menuError}</div>}
+            {menuNotice && <div className="dk-login-success dk-admin-feedback">{menuNotice}</div>}
+            {menuLoading && <p className="dk-admin-loading">Memuat menu dan kategori...</p>}
             <div className="dk-admin-toolbar dk-menu-toolbar">
-              <button className="dk-btn-outline dk-menu-toolbar-btn" onClick={() => { setEditingCat(null); setShowCatForm(true); }}>
+              <button className="dk-btn-outline dk-menu-toolbar-btn" onClick={() => { setMenuError(''); setMenuNotice(''); setEditingCat(null); setShowCatForm(true); }} disabled={menuBusy}>
                 <span className="material-symbols-outlined" style={{fontSize:16}}>add</span> Kategori
               </button>
-              <button className="dk-btn-primary dk-menu-toolbar-btn" onClick={() => { setEditingMenu(null); setShowMenuForm(true); }}>
+              <ScrollView className="dk-category-span-list" aria-label="Kategori menu">
+                {menus.map((cat) => (
+                  <button
+                    type="button"
+                    key={cat.name}
+                    className={`dk-category-span ${activeCat === cat.name ? 'dk-category-span-active' : ''}`}
+                    onClick={() => setActiveCat(cat.name)}
+                    disabled={menuBusy}
+                  >
+                    <span className="dk-category-code">{cat.icon}</span> {cat.name}
+                    <small>{cat.items.length}</small>
+                    <span className="dk-category-span-edit" onClick={(e) => { e.stopPropagation(); setMenuError(''); setMenuNotice(''); setEditingCat(cat); setShowCatForm(true); }} title="Edit">
+                      <span className="material-symbols-outlined" style={{fontSize:14}}>edit</span>
+                    </span>
+                  </button>
+                ))}
+              </ScrollView>
+              <button className="dk-btn-primary dk-menu-toolbar-btn" onClick={() => { setMenuError(''); setMenuNotice(''); setEditingMenu(null); setShowMenuForm(true); }} disabled={menuBusy || !categories.length}>
                 <span className="material-symbols-outlined" style={{fontSize:16}}>add</span> Tambah Menu
               </button>
-            </div>
-            <div className="dk-category-span-list">
-              {menus.map((cat) => (
-                <span
-                  key={cat.name}
-                  className={`dk-category-span ${activeCat === cat.name ? 'dk-category-span-active' : ''}`}
-                  onClick={() => setActiveCat(cat.name)}
-                >
-                  <span className="dk-category-code">{cat.icon}</span> {cat.name}
-                  <small>{cat.items.length}</small>
-                  <span className="dk-category-span-edit" onClick={(e) => { e.stopPropagation(); setEditingCat(cat); setShowCatForm(true); }} title="Edit">
-                    <span className="material-symbols-outlined" style={{fontSize:14}}>edit</span>
-                  </span>
-                </span>
-              ))}
             </div>
             {category && (
               <ScrollView className="dk-menu-table-scroll">
@@ -1687,6 +1814,7 @@ function AdminDashboard({ onLogout, onSettings }) {
         {tab === 'report' && (
           <div className="dk-admin-content">
             {/* Toolbar (tidak ikut cetak) */}
+            {reportError && <div className="dk-login-error dk-admin-feedback">{reportError}</div>}
             <div className="dk-report-toolbar dk-report-control-panel no-print">
               <div className="dk-report-filter-group">
                 <label className="dk-report-filter-label" htmlFor="report-period">Periode</label>
