@@ -197,16 +197,17 @@ class MenuController {
         });
       }
 
-      // Delete image file if exists
-      if (menu.imageUrl) {
+      // Delete uploaded image file if it belongs to local uploads.
+      if (menu.imageUrl && String(menu.imageUrl).startsWith('/uploads/')) {
         const imagePath = path.join(__dirname, '..', menu.imageUrl);
         if (fs.existsSync(imagePath)) {
           fs.unlinkSync(imagePath);
         }
       }
 
-      await prisma.menu.delete({
-        where: { id: parseInt(id) }
+      await prisma.menu.update({
+        where: { id: parseInt(id) },
+        data: { isActive: false }
       });
 
       res.json({

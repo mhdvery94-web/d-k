@@ -4,7 +4,28 @@ import { getMenuImage, FALLBACK_IMG, money, formatDate, todayStr, IMAGE_KEYS } f
 import jsPDF from 'jspdf';
 import './styles.css';
 
-const ICONS = ['FD','MN','RB','NS','CK','ND','LM','OR','CF','DR','SN','FR','AP','BN','BG','HT','PZ','PA','SL','DS'];
+const CATEGORY_ICONS = [
+  { code: 'FD', label: 'Makanan', symbol: 'restaurant' },
+  { code: 'MN', label: 'Menu', symbol: 'menu_book' },
+  { code: 'RB', label: 'Rice Bowl', symbol: 'rice_bowl' },
+  { code: 'NS', label: 'Nasi', symbol: 'ramen_dining' },
+  { code: 'CK', label: 'Ayam', symbol: 'set_meal' },
+  { code: 'ND', label: 'Mie', symbol: 'dinner_dining' },
+  { code: 'LM', label: 'Lemon', symbol: 'local_drink' },
+  { code: 'OR', label: 'Jeruk', symbol: 'nutrition' },
+  { code: 'CF', label: 'Kopi', symbol: 'local_cafe' },
+  { code: 'DR', label: 'Minuman', symbol: 'local_bar' },
+  { code: 'SN', label: 'Snack', symbol: 'bakery_dining' },
+  { code: 'FR', label: 'Gorengan', symbol: 'takeout_dining' },
+  { code: 'AP', label: 'Appetizer', symbol: 'tapas' },
+  { code: 'BN', label: 'Bakery', symbol: 'cake' },
+  { code: 'BG', label: 'Burger', symbol: 'lunch_dining' },
+  { code: 'HT', label: 'Hot', symbol: 'local_fire_department' },
+  { code: 'PZ', label: 'Pizza', symbol: 'local_pizza' },
+  { code: 'PA', label: 'Pasta', symbol: 'restaurant_menu' },
+  { code: 'SL', label: 'Salad', symbol: 'eco' },
+  { code: 'DS', label: 'Dessert', symbol: 'icecream' },
+];
 
 const API_BASE_URL = '/api';
 const SELLER_CHECKLIST_STORAGE_KEY = 'dk_seller_checklist_states';
@@ -19,6 +40,24 @@ function loadSellerChecklistStates() {
 
 function ScrollView({ className, children, ...props }) {
   return <div className={`dk-scrollview ${className || ''}`.trim()} {...props}>{children}</div>;
+}
+
+function getCategoryIconMeta(code) {
+  return CATEGORY_ICONS.find((icon) => icon.code === code) || CATEGORY_ICONS[1];
+}
+
+function CategoryVisualIcon({ code, className = '' }) {
+  const icon = getCategoryIconMeta(code);
+  return <span className={`material-symbols-outlined dk-category-visual-icon ${className}`.trim()}>{icon.symbol}</span>;
+}
+
+function getUploadedImageSrc(image) {
+  if (!image) return FALLBACK_IMG;
+  const value = String(image);
+  if (value.startsWith('/api/uploads/')) return value;
+  if (value.startsWith('/uploads/')) return `${API_BASE_URL}${value}`;
+  if (value.startsWith('uploads/')) return `${API_BASE_URL}/${value}`;
+  return getMenuImage(value);
 }
 
 async function parseApiResponse(response, fallbackMessage) {
@@ -803,27 +842,28 @@ function OrderManager() {
   };
 
   return (
-    <div className="dk-admin-content dk-orders-page">
-      <div className="dk-admin-toolbar dk-orders-toolbar">
-        <input
-          className="dk-search-input"
-          placeholder="Cari order, nama, atau telepon..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') loadOrders(); }}
-        />
+      <div className="dk-admin-content dk-orders-page">
+        <div className="dk-admin-toolbar dk-orders-toolbar">
+        <div className="dk-orders-search-row">
+          <input
+            className="dk-search-input"
+            placeholder="Masukan nomor pesanan"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') loadOrders(); }}
+          />
+          <button className="dk-btn-outline" onClick={loadOrders}>
+            <span className="material-symbols-outlined" style={{fontSize:18}}>search</span>
+          </button>
+        </div>
         <select className="dk-order-filter-select" value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">Semua Status</option>
           <option value="confirmed">Baru</option>
-          <option value="preparing">Diproses</option>
           <option value="packaging">Dikemas</option>
           <option value="delivering">Dikirim</option>
           <option value="completed">Selesai</option>
           <option value="cancelled">Dibatalkan</option>
         </select>
-        <button className="dk-btn-outline" onClick={loadOrders}>
-          <span className="material-symbols-outlined" style={{fontSize:18}}>search</span>
-        </button>
       </div>
 
       {error && <div className="dk-login-error">{error}</div>}
@@ -1049,9 +1089,9 @@ function MenuForm({ initial, categories, onSave, onCancel, onUploadImage }) {
               }
             }} disabled={uploading} hidden />
           </label>
-          {form.image && (form.image.startsWith('data:') || form.image.startsWith('http') || form.image.startsWith('/')) && (
+          {form.image && (
             <div className="dk-upload-preview">
-              <img src={form.image} alt="" onError={(e) => { e.target.src = FALLBACK_IMG; }} />
+              <img src={getUploadedImageSrc(form.image)} alt="Preview menu" onError={(e) => { e.target.src = FALLBACK_IMG; }} />
             </div>
           )}
         </div>
@@ -1112,9 +1152,19 @@ function CategoryForm({ initial, onSave, onCancel, onDelete }) {
           <input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setError(''); }} placeholder="Nama kategori" required disabled={saving} />
         </div>
         <div className="dk-icon-picker">
-          {ICONS.map((icon) => (
-            <button key={icon} type="button" className={`dk-icon-option ${form.icon === icon ? 'dk-icon-selected' : ''}`} onClick={() => setForm({ ...form, icon })} disabled={saving}>{icon}</button>
-        ))}
+          {CATEGORY_ICONS.map((icon) => (
+            <button
+              key={icon.code}
+              type="button"
+              className={`dk-icon-option ${form.icon === icon.code ? 'dk-icon-selected' : ''}`}
+              onClick={() => setForm({ ...form, icon: icon.code })}
+              disabled={saving}
+              title={icon.label}
+            >
+              <CategoryVisualIcon code={icon.code} />
+              <span>{icon.label}</span>
+            </button>
+          ))}
         </div>
         {error && <div className="dk-form-error">{error}</div>}
         <div className="dk-form-actions">
@@ -1457,9 +1507,9 @@ function AdminDashboard({ onLogout, onSettings }) {
     };
 
     eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
-      eventSource.close();
-      // Don't reload page - just log the error and let the cleanup handle reconnection
+      if (eventSource.readyState === EventSource.CLOSED) {
+        console.warn('SSE connection closed:', error);
+      }
     };
 
     return () => {
@@ -1748,19 +1798,21 @@ function AdminDashboard({ onLogout, onSettings }) {
               </button>
               <ScrollView className="dk-category-span-list" aria-label="Kategori menu">
                 {menus.map((cat) => (
-                  <button
-                    type="button"
+                  <span
+                    role="button"
+                    tabIndex={menuBusy ? -1 : 0}
                     key={cat.name}
                     className={`dk-category-span ${activeCat === cat.name ? 'dk-category-span-active' : ''}`}
-                    onClick={() => setActiveCat(cat.name)}
-                    disabled={menuBusy}
+                    onClick={() => { if (!menuBusy) setActiveCat(cat.name); }}
+                    onKeyDown={(e) => { if (!menuBusy && (e.key === 'Enter' || e.key === ' ')) setActiveCat(cat.name); }}
+                    aria-disabled={menuBusy}
                   >
-                    <span className="dk-category-code">{cat.icon}</span> {cat.name}
+                    <span className="dk-category-span-main"><CategoryVisualIcon code={cat.icon} /> {cat.name}</span>
                     <small>{cat.items.length}</small>
                     <span className="dk-category-span-edit" onClick={(e) => { e.stopPropagation(); setMenuError(''); setMenuNotice(''); setEditingCat(cat); setShowCatForm(true); }} title="Edit">
                       <span className="material-symbols-outlined" style={{fontSize:14}}>edit</span>
                     </span>
-                  </button>
+                  </span>
                 ))}
               </ScrollView>
               <button className="dk-btn-primary dk-menu-toolbar-btn" onClick={() => { setMenuError(''); setMenuNotice(''); setEditingMenu(null); setShowMenuForm(true); }} disabled={menuBusy || !categories.length}>
@@ -1786,7 +1838,7 @@ function AdminDashboard({ onLogout, onSettings }) {
                     ) : (
                       category.items.map((item) => (
                         <tr key={item.id}>
-                          <td><img className="dk-admin-thumb" src={getMenuImage(item.image)} alt="" onError={(e) => { e.target.src = FALLBACK_IMG; }} /></td>
+                          <td><img className="dk-admin-thumb" src={getUploadedImageSrc(item.image)} alt="" onError={(e) => { e.target.src = FALLBACK_IMG; }} /></td>
                           <td><strong>{item.name}</strong></td>
                           <td>{money(item.price)}</td>
                           <td>{item.discountPercent ? <span className="dk-discount-badge">{item.discountPercent}%</span> : '-'}</td>

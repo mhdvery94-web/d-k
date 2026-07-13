@@ -1050,16 +1050,22 @@ img { display: block; max-width: 100%; }
 }
 .dk-admin-form textarea { min-height: 80px; resize: vertical; }
 
-.dk-icon-picker { display: flex; flex-wrap: wrap; gap: 6px; max-height: 140px; overflow-y: auto; padding: 4px 0; }
+.dk-icon-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; padding: 4px 0; }
 
 .dk-icon-option {
-  width: 38px; height: 38px;
-  display: flex; align-items: center; justify-content: center;
+  min-height: 70px;
+  display: grid; place-items: center;
+  gap: 6px;
+  padding: 10px 8px;
   border-radius: var(--dk-radius-sm);
-  font-size: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dk-text-muted);
   border: 2px solid transparent;
   transition: all 0.15s;
 }
+.dk-icon-option .dk-category-visual-icon { font-size: 28px; color: var(--dk-blue); }
+.dk-icon-option span:last-child { line-height: 1.15; text-align: center; }
 .dk-icon-option:hover { background: var(--dk-bg-hover); }
 .dk-icon-selected { border-color: var(--dk-blue-light); background: var(--dk-blue-pale); }
 
@@ -2209,7 +2215,9 @@ img { display: block; max-width: 100%; }
 .dk-app-admin .dk-admin-nav { background: #FFFFFF; padding-top: 0; }
 .dk-app-admin .dk-admin-nav-btn { min-height: 48px; }
 .dk-orders-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.dk-orders-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: 10px; min-width: 0; }
 .dk-orders-toolbar .dk-search-input { min-width: 0; padding: 12px 14px; border: 1px solid #DAD8BE; border-radius: 0; background: #fff; }
+.dk-orders-search-row .dk-btn-outline { min-width: 44px; justify-content: center; padding-inline: 12px; }
 .dk-order-status-tabs { flex-wrap: nowrap; gap: 0; padding: 3px; border: 1px solid var(--dk-border-light); background: #fff; overflow-x: auto; scrollbar-width: none; }
 .dk-order-status-tabs::-webkit-scrollbar { display: none; }
 .dk-order-status-tabs .dk-admin-tab { flex: 0 0 auto; min-height: 34px; padding: 7px 12px; border: 0; background: transparent; color: var(--dk-text-muted); font-size: 12px; }
@@ -2234,12 +2242,12 @@ img { display: block; max-width: 100%; }
 .dk-admin-order-address small { color: #5E6B67; line-height: 1.5; }
 .dk-admin-order-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
 .dk-admin-order-items span { display: block; padding: 8px 10px; }
-.dk-seller-checklist { display: grid; gap: 10px; padding: 14px; border: 1px solid #C7C4A8; border-radius: 0; background: #FFFFFF; }
-.dk-seller-checklist > strong { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #3A423F; }
+.dk-seller-checklist { display: grid; gap: 10px; padding: 14px; border: 1px solid #111111; border-radius: 0; background: #FFFFFF; color: #000000; }
+.dk-seller-checklist > strong { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #000000; }
 .dk-seller-checkline { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
-.dk-seller-checkbox { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 8px 10px; border: 1px solid var(--dk-border-light); border-radius: 0; background: #FFFFFF; font-size: 14px; color: #3A423F; cursor: pointer; }
+.dk-seller-checkbox { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 8px 10px; border: 1px solid #111111; border-radius: 0; background: #FFFFFF; font-size: 14px; color: #000000; cursor: pointer; }
 .dk-seller-checkbox:hover { background: var(--dk-bg-hover); }
-.dk-seller-checkbox input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: #006769; }
+.dk-seller-checkbox input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: #000000; }
 .dk-seller-checkbox span { min-width: 0; overflow-wrap: anywhere; }
 .dk-seller-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; padding-top: 8px; border-top: 1px dashed #C7C4A8; }
 .dk-admin-order-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 4px; }
@@ -2377,6 +2385,8 @@ img { display: block; max-width: 100%; }
   user-select: none;
   white-space: nowrap;
 }
+.dk-category-span-main { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.dk-category-visual-icon { color: currentColor; font-size: 18px; line-height: 1; }
 .dk-category-span:disabled { opacity: 0.65; cursor: not-allowed; }
 .dk-category-span:hover { border-color: var(--dk-blue-light); color: var(--dk-blue); }
 .dk-category-span-active { background: var(--dk-blue); color: #fff; border-color: var(--dk-blue); }

@@ -81,6 +81,22 @@ class CategoryController {
       });
 
       if (existing) {
+        if (!existing.isActive) {
+          const restored = await prisma.category.update({
+            where: { id: existing.id },
+            data: {
+              icon: icon || existing.icon || 'CT',
+              isActive: true
+            }
+          });
+
+          return res.status(201).json({
+            success: true,
+            message: 'Berhasil membuat kategori',
+            data: restored
+          });
+        }
+
         return res.status(400).json({
           success: false,
           message: 'Kategori sudah ada'
@@ -131,7 +147,7 @@ class CategoryController {
           where: { name }
         });
 
-        if (existing) {
+        if (existing && existing.id !== category.id && existing.isActive) {
           return res.status(400).json({
             success: false,
             message: 'Nama kategori sudah ada'
@@ -182,21 +198,23 @@ class CategoryController {
         });
       }
 
-      // Check if category has menus
-      if (category._count.menus > 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Tidak dapat menghapus kategori yang memiliki menu'
+      await prisma.$transaction(async (tx) => {
+        await tx.menu.updateMany({
+          where: { categoryId: parseInt(id), isActive: true },
+          data: { isActive: false }
         });
-      }
 
-      await prisma.category.delete({
-        where: { id: parseInt(id) }
+        await tx.category.update({
+          where: { id: parseInt(id) },
+          data: { isActive: false }
+        });
       });
 
       res.json({
         success: true,
-        message: 'Berhasil menghapus kategori'
+        message: category._count.menus > 0
+          ? 'Berhasil menghapus kategori dan menyembunyikan menu terkait'
+          : 'Berhasil menghapus kategori'
       });
     } catch (error) {
       console.error('Delete category error:', error);
