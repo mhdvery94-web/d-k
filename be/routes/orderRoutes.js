@@ -31,7 +31,7 @@ router.get('/track-by-phone/:phone', async (req, res, next) => {
 // GET /api/orders/track/:orderNumber - Track order (public) — harus di atas
 router.get('/track/:orderNumber', async (req, res, next) => {
   try {
-    const data = await orderModel.findByOrderNumber(req.params.orderNumber);
+    const data = await orderModel.findByOrderNumber(String(req.params.orderNumber || '').trim().toUpperCase());
     if (!data) return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
     res.json({ success: true, message: 'Pesanan ditemukan', data });
   } catch (error) {

@@ -44,11 +44,11 @@ function formatPhoneInput(value) {
 }
 
 /* ── Customer Header ── */
-function Header({ onTracking }) {
+function Header({ onHome, onTracking }) {
   return (
     <header className="dk-header">
       <div className="dk-header-top">
-        <span className="dk-brand-icon-text" aria-label="Dapur Kemas">DK</span>
+        <button type="button" className="dk-brand-icon-text dk-brand-home" onClick={onHome} aria-label="Ke halaman utama Dapur Kemas">DK</button>
         <div className="dk-brand-title">
           <h1>DAPUR KEMAS</h1>
         </div>
@@ -666,7 +666,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
 }
 
 function OrderTrackingPage({ onMenu }) {
-  const [phone, setPhone] = useState('');
+  const [query, setQuery] = useState('');
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -674,13 +674,19 @@ function OrderTrackingPage({ onMenu }) {
 
   async function submit(e) {
     e.preventDefault();
-    const validation = validatePhoneInput(phone);
-    if (!validation.isValid) { setError(validation.error); return; }
+    const trimmed = query.trim();
+    if (!trimmed) { setError('Masukkan nomor HP atau nomor pesanan'); return; }
+
     setLoading(true); setError('');
     try {
-      const result = await fetch(`/api/orders/track-by-phone/${encodeURIComponent(phone)}`).then((res) => res.json());
+      const validation = validatePhoneInput(trimmed);
+      const looksLikePhone = validation.isValid || /^[+\d][\d\s-]{7,}$/.test(trimmed);
+      const endpoint = validation.isValid || looksLikePhone
+        ? `/api/orders/track-by-phone/${encodeURIComponent(trimmed)}`
+        : `/api/orders/track/${encodeURIComponent(trimmed.toUpperCase())}`;
+      const result = await fetch(endpoint).then((res) => res.json());
       if (!result.success) throw new Error(result.message);
-      setOrders(result.data || []);
+      setOrders(Array.isArray(result.data) ? result.data : [result.data].filter(Boolean));
     } catch (err) {
       setError(err.message || 'Gagal cek pesanan');
     } finally {
@@ -704,17 +710,14 @@ function OrderTrackingPage({ onMenu }) {
       <section className="dk-tracking">
         <div className="dk-tracking-header">
           <h2>Cek Pesanan</h2>
-          <p>Masukkan nomor HP untuk melihat status pesanan</p>
+          <p>Masukkan nomor HP atau nomor pesanan</p>
         </div>
 
         <form onSubmit={submit} className="dk-tracking-input-group">
-          <div className="dk-phone-row dk-phone-row-track">
-            <span className="dk-phone-prefix">+62</span>
-            <input className="dk-form-input" type="tel" placeholder="812-3456-7890" value={phone} onChange={(e) => { setPhone(formatPhoneInput(e.target.value)); setError(''); }} />
-          </div>
+          <input className="dk-form-input" type="text" placeholder="812-3456-7890 atau DK-20260714-0001" value={query} onChange={(e) => { setQuery(e.target.value); setError(''); }} />
           <button className="dk-btn-pay" disabled={loading}>{loading ? '...' : 'Cek'}</button>
         </form>
-        {phone && <div className="dk-phone-preview valid">Format pencarian: +62 {validatePhoneInput(phone).formatted || '-'}</div>}
+        {query && validatePhoneInput(query).isValid && <div className="dk-phone-preview valid">Format pencarian HP: +62 {validatePhoneInput(query).formatted}</div>}
 
         {error && <div className="dk-form-error">{error}</div>}
 
@@ -722,7 +725,7 @@ function OrderTrackingPage({ onMenu }) {
           {orders.length === 0 && !loading && (
               <div className="dk-empty-state">
               <div className="dk-empty-state-icon">ORD</div>
-              <p>Masukkan nomor HP untuk mencari pesanan</p>
+              <p>Masukkan nomor HP atau nomor pesanan untuk mencari pesanan</p>
             </div>
           )}
 
@@ -988,6 +991,14 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
   const itemCount = cart.reduce((s, c) => s + c.qty, 0);
   const total = cart.reduce((s, c) => s + getDiscountedPrice(c) * c.qty, 0);
 
+  const resetCustomerSession = useCallback(() => {
+    setCart([]);
+    setReviewOpen(false);
+    setPendingPayment(null);
+    setReceiptData(null);
+    setPage('menu');
+  }, []);
+
   const handleCheckout = useCallback(async (cartItems, orderTotal, customerInfo = {}) => {
     const payload = {
       customerName: customerInfo.customerName || '',
@@ -1029,6 +1040,8 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
   }, []);
 
   const handleReceipt = useCallback((order) => {
+    setCart([]);
+    setReviewOpen(false);
     setReceiptData(order);
     setPendingPayment(null);
     setPage('receipt');
@@ -1037,22 +1050,22 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
   return (
     <>
     <div className="dk-app">
-      <Header onTracking={() => setPage('tracking')} />
+      <Header onHome={resetCustomerSession} onTracking={() => { setReviewOpen(false); setPage('tracking'); }} />
       {page === 'menu' && <main className="dk-main">
         {menuLoading && <div className="dk-empty-state">Memuat menu...</div>}
         {!menuLoading && menuError && <div className="dk-empty-state">{menuError}</div>}
         {!menuLoading && !menuError && menus.length === 0 && <div className="dk-empty-state">Menu belum tersedia</div>}
         {!menuLoading && !menuError && menus.map((cat) => <CategorySection key={cat.name} category={cat} cart={cart} menus={menus} onAdd={addToCart} onIncrease={increase} onDecrease={decrease} />)}
       </main>}
-      {page === 'tracking' && <OrderTrackingPage onMenu={() => setPage('menu')} />}
+      {page === 'tracking' && <OrderTrackingPage onMenu={resetCustomerSession} />}
       {page === 'pending' && pendingPayment && (
         <PendingPaymentPage 
           sessionToken={pendingPayment} 
-          onMenu={() => { setPendingPayment(null); setPage('menu'); }}
+          onMenu={resetCustomerSession}
           onReceipt={handleReceipt}
         />
       )}
-      {page === 'receipt' && <ReceiptPage data={receiptData} onMenu={() => setPage('menu')} onTracking={() => setPage('tracking')} />}
+      {page === 'receipt' && <ReceiptPage data={receiptData} onMenu={resetCustomerSession} onTracking={() => { setReviewOpen(false); setPage('tracking'); }} />}
     </div>
       {page === 'menu' && <CartBar itemCount={itemCount} total={total} onReview={() => setReviewOpen(true)} />}
       {reviewOpen && (

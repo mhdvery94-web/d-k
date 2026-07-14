@@ -32,6 +32,25 @@
  */
 
 const prisma = require('../utils/prisma');
+const { normalizePhone } = require('../utils/validators');
+
+function buildOrderSearch(search) {
+  const value = String(search || '').trim();
+  if (!value) return undefined;
+
+  const or = [
+    { orderNumber: { contains: value } },
+    { customerName: { contains: value } },
+    { customerPhone: { contains: value } },
+  ];
+
+  const normalizedPhone = normalizePhone(value);
+  if (normalizedPhone && normalizedPhone !== value) {
+    or.push({ customerPhone: { contains: normalizedPhone } });
+  }
+
+  return or;
+}
 
 class OrderModel {
   async findAll(filters = {}) {
@@ -48,13 +67,8 @@ class OrderModel {
       };
     }
 
-    if (filters.search) {
-      where.OR = [
-        { orderNumber: { contains: filters.search } },
-        { customerName: { contains: filters.search } },
-        { customerPhone: { contains: filters.search } },
-      ];
-    }
+    const searchOr = buildOrderSearch(filters.search);
+    if (searchOr) where.OR = searchOr;
 
     return prisma.order.findMany({
       where,
@@ -136,13 +150,8 @@ class OrderModel {
       where.orderStatus = status;
     }
 
-    if (search) {
-      where.OR = [
-        { orderNumber: { contains: search } },
-        { customerName: { contains: search } },
-        { customerPhone: { contains: search } }
-      ];
-    }
+    const searchOr = buildOrderSearch(search);
+    if (searchOr) where.OR = searchOr;
 
     if (startDate && endDate) {
       where.createdAt = {

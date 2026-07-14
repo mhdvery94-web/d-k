@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getMenuImage, FALLBACK_IMG, money, formatDate, todayStr, IMAGE_KEYS } from './data.js';
+import { FALLBACK_IMG, money, formatDate, todayStr } from './data.js';
 import jsPDF from 'jspdf';
 import './styles.css';
 
@@ -57,7 +57,7 @@ function getUploadedImageSrc(image) {
   if (value.startsWith('/api/uploads/')) return value;
   if (value.startsWith('/uploads/')) return `${API_BASE_URL}${value}`;
   if (value.startsWith('uploads/')) return `${API_BASE_URL}/${value}`;
-  return getMenuImage(value);
+  return FALLBACK_IMG;
 }
 
 async function parseApiResponse(response, fallbackMessage) {
@@ -695,7 +695,7 @@ function ForgotUsernameModal({ onClose }) {
 }
 
 /* ── Header ── */
-function Header({ onLogout, onSettings }) {
+function Header({ onLogout, onSettings, onHome }) {
   const handleLogout = async () => {
     try {
       await apiCall('/auth/logout', { method: 'POST' });
@@ -711,7 +711,7 @@ function Header({ onLogout, onSettings }) {
   return (
     <header className="dk-header admin-header">
       <div className="dk-header-top">
-        <span className="dk-brand-icon"><img src="/icon.png" alt="Dapur Kemas" /></span>
+        <button type="button" className="dk-brand-icon dk-brand-home" onClick={onHome} aria-label="Ke dashboard admin"><img src="/icon.png" alt="Dapur Kemas" /></button>
         <div className="dk-brand-title">
           <h1>PANEL ADMIN</h1>
         </div>
@@ -780,10 +780,12 @@ function OrderManager() {
       let list = result.data || [];
       if (search.trim()) {
         const q = search.trim().toLowerCase();
+        const phoneDigits = q.replace(/\D/g, '').replace(/^62/, '').replace(/^0/, '');
         list = list.filter((o) =>
           String(o.orderNumber).toLowerCase().includes(q) ||
           String(o.customerName).toLowerCase().includes(q) ||
-          String(o.customerPhone).toLowerCase().includes(q)
+          String(o.customerPhone).toLowerCase().includes(q) ||
+          (phoneDigits && String(o.customerPhone).replace(/\D/g, '').includes(phoneDigits))
         );
       }
       setOrders(list);
@@ -792,6 +794,13 @@ function OrderManager() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const reloadOrdersPage = () => {
+    setFilter('');
+    setSearch('');
+    setExpanded(null);
+    loadOrders();
   };
 
   useEffect(() => {
@@ -844,10 +853,11 @@ function OrderManager() {
   return (
       <div className="dk-admin-content dk-orders-page">
         <div className="dk-admin-toolbar dk-orders-toolbar">
+        <button className="dk-btn-back" onClick={reloadOrdersPage} title="Muat ulang pesanan">← Reload</button>
         <div className="dk-orders-search-row">
           <input
             className="dk-search-input"
-            placeholder="Masukan nomor pesanan"
+            placeholder="Nomor pesanan / nama / no. HP"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') loadOrders(); }}
@@ -992,7 +1002,7 @@ function MenuForm({ initial, categories, onSave, onCancel, onUploadImage }) {
     discountPercent: initial?.discountPercent || '',
     stock: initial?.stock || '',
     description: initial?.description || '',
-    image: initial?.image || IMAGE_KEYS[0],
+    image: initial?.image || '',
     category: initial?.categoryName || categories[0]?.name || '',
   });
   const [discountEnabled, setDiscountEnabled] = useState(!!(initial?.discountPercent));
@@ -1094,13 +1104,6 @@ function MenuForm({ initial, categories, onSave, onCancel, onUploadImage }) {
               <img src={getUploadedImageSrc(form.image)} alt="Preview menu" onError={(e) => { e.target.src = FALLBACK_IMG; }} />
             </div>
           )}
-        </div>
-        <div className="dk-image-picker">
-          {IMAGE_KEYS.map((key) => (
-            <button key={key} type="button" className={`dk-image-option ${form.image === key ? 'dk-image-selected' : ''}`} onClick={() => setForm({ ...form, image: key })}>
-              <img src={getMenuImage(key)} alt="" onError={(e) => { e.target.src = FALLBACK_IMG; }} />
-            </button>
-          ))}
         </div>
         {error && <div className="dk-form-error">{error}</div>}
         <div className="dk-form-actions">
@@ -1420,7 +1423,7 @@ function AdminDashboard({ onLogout, onSettings }) {
         discountPercent: menu.discountPercent || null,
         stock: menu.stock ?? 0,
         description: menu.description || '',
-        image: menu.imageUrl || IMAGE_KEYS[0],
+        image: menu.imageUrl || '',
         categoryName: cat.name,
       });
     });
@@ -1758,7 +1761,7 @@ function AdminDashboard({ onLogout, onSettings }) {
 
   return (
     <div className="dk-app dk-app-admin">
-      <Header onLogout={onLogout} onSettings={onSettings} />
+      <Header onLogout={onLogout} onSettings={onSettings} onHome={() => setTab('dashboard')} />
 
       <div className="dk-admin">
         <div className="dk-admin-nav">

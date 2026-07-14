@@ -1,6 +1,7 @@
 /**
- * Helper untuk generate nomor order: YYMMDD + letter sequence
- * Contoh: 250705A, 250705B, 250705AA
+ * Helper untuk generate nomor order produksi.
+ * Format baru: DK-YYYYMMDD-NNNN
+ * Contoh: DK-20260714-0001
  */
 
 function numberToLetters(num) {
@@ -25,10 +26,10 @@ function randomLetter() {
   return String.fromCharCode(65 + Math.floor(Math.random() * 26));
 }
 
-// Format: YYYYMMDD-NNN-X (tahun-bulan-tanggal-increment-huruf acak)
+// Format: DK-YYYYMMDD-NNNN (brand-tahunbulanTanggal-urutan harian)
 function formatOrderNumber(datePrefix, sequenceNumber) {
-  const num = String(sequenceNumber).padStart(3, '0');
-  return `${datePrefix}-${num}-${randomLetter()}`;
+  const num = String(sequenceNumber).padStart(4, '0');
+  return `DK-${datePrefix}-${num}`;
 }
 
 module.exports = { numberToLetters, getDatePrefix, randomLetter, formatOrderNumber };

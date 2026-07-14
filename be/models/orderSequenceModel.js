@@ -3,7 +3,7 @@
  * Blueprint dari tabel `order_sequences` di database
  *
  * Digunakan untuk generate nomor order unik per hari.
- * Format: YYMMDD + letter (A, B, C, ..., Z, AA, AB, ...)
+  * Format: DK-YYYYMMDD-NNNN
  *
  * Fields:
  * - id:             INT AUTO_INCREMENT PRIMARY KEY
@@ -19,7 +19,7 @@ const { getDatePrefix, formatOrderNumber } = require('../utils/orderNumber');
 class OrderSequenceModel {
   /**
    * Generate order number berikutnya (atomic, untuk concurrency)
-   * Format: YYYYMMDD-NNN-X (tahun-bulan-tanggal-increment-huruf acak)
+   * Format: DK-YYYYMMDD-NNNN (brand-tanggal-increment harian)
    * Dipanggil dalam transaction dengan lock.
    */
   async generateOrderNumber(tx) {
