@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { initialMenus, getMenuImage, FALLBACK_IMG, money, formatDate, validatePhoneInput, formatPhoneDisplay } from './data.js';
+import { getMenuImage, FALLBACK_IMG, money, formatDate, validatePhoneInput, formatPhoneDisplay } from './data.js';
 import html2canvas from 'html2canvas';
 import './styles.css';
 
@@ -20,17 +20,18 @@ function getDiscountedPrice(item) {
 }
 
 function transformApiMenus(list) {
-  if (!Array.isArray(list)) return initialMenus;
+  if (!Array.isArray(list)) return [];
   const grouped = new Map();
   list.forEach((menu) => {
     const categoryName = menu.category?.name || 'Menu';
     if (!grouped.has(categoryName)) grouped.set(categoryName, { name: categoryName, icon: menu.category?.icon || '', items: [] });
+    const imageUrl = menu.imageUrl || 'default';
     grouped.get(categoryName).items.push({
       id: menu.id,
       name: menu.name,
       price: Number(menu.price),
       discountPercent: menu.discountPercent || null,
-      image: menu.imageUrl || 'default',
+      image: String(imageUrl).startsWith('/uploads/') ? `/api${imageUrl}` : imageUrl,
       description: menu.description || '',
       stock: menu.stock ?? 0,
     });
@@ -906,7 +907,9 @@ function PendingPaymentPage({ sessionToken, onMenu, onReceipt }) {
 
 /* ── App ── */
 function App() {
-  const [menus, setMenus] = useState(initialMenus);
+  const [menus, setMenus] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(true);
+  const [menuError, setMenuError] = useState('');
 
   const [cart, setCart] = useState([]);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -918,12 +921,23 @@ function App() {
     if (page !== 'menu') return undefined;
 
     const loadMenus = () => {
+      setMenuLoading(true);
+      setMenuError('');
       fetch('/api/menus')
         .then((res) => res.json())
-     .then((result) => {
-          if (result.success && Array.isArray(result.data) && result.data.length > 0) setMenus(transformApiMenus(result.data));
-   })
-        .catch(() => {});
+        .then((result) => {
+          if (result.success && Array.isArray(result.data)) {
+            setMenus(transformApiMenus(result.data));
+          } else {
+            setMenus([]);
+            setMenuError(result?.message || 'Gagal memuat menu');
+          }
+        })
+        .catch(() => {
+          setMenus([]);
+          setMenuError('Gagal terhubung ke server menu');
+        })
+        .finally(() => setMenuLoading(false));
     };
 
     loadMenus();
@@ -1025,7 +1039,10 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
     <div className="dk-app">
       <Header onTracking={() => setPage('tracking')} />
       {page === 'menu' && <main className="dk-main">
-        {menus.map((cat) => <CategorySection key={cat.name} category={cat} cart={cart} menus={menus} onAdd={addToCart} onIncrease={increase} onDecrease={decrease} />)}
+        {menuLoading && <div className="dk-empty-state">Memuat menu...</div>}
+        {!menuLoading && menuError && <div className="dk-empty-state">{menuError}</div>}
+        {!menuLoading && !menuError && menus.length === 0 && <div className="dk-empty-state">Menu belum tersedia</div>}
+        {!menuLoading && !menuError && menus.map((cat) => <CategorySection key={cat.name} category={cat} cart={cart} menus={menus} onAdd={addToCart} onIncrease={increase} onDecrease={decrease} />)}
       </main>}
       {page === 'tracking' && <OrderTrackingPage onMenu={() => setPage('menu')} />}
       {page === 'pending' && pendingPayment && (

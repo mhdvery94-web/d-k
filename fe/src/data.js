@@ -89,38 +89,4 @@ export function newId() {
   return Date.now();
 }
 
-export const initialMenus = [
-  {
-    name: 'Makanan',
-    icon: 'FD',
-    items: [
-      { id: 1, name: 'Nasi Ayam Geprek Sambal Ijo', price: 17000, discountPercent: 15, image: 'ayam-geprek', description: 'Ayam crispy, sambal ijo, lalapan, dan nasi putih.', stock: 25 },
-      { id: 2, name: 'Rice Bowl Ayam Teriyaki', price: 18000, discountPercent: 20, image: 'rice-bowl', description: 'Nasi hangat, ayam teriyaki, telur, sayur, dan saus spesial.', stock: 20 },
-      { id: 3, name: 'Nasi Bakar Ayam Suwir', price: 16000, discountPercent: null, image: 'nasi-bakar', description: 'Nasi bakar gurih dengan ayam suwir berbumbu dan kemangi.', stock: 15 },
-      { id: 4, name: 'Paket Ayam Bakar Madu', price: 21000, discountPercent: 15, image: 'ayam-bakar', description: 'Ayam bakar madu, nasi, tahu tempe, dan sambal.', stock: 18 },
-      { id: 5, name: 'Mie Goreng Seafood', price: 19000, discountPercent: null, image: 'mie-goreng', description: 'Mie goreng dengan udang, telur, sayur, dan bumbu gurih.', stock: 22 },
-    ],
-  },
-  {
-    name: 'Minuman',
-    icon: 'DR',
-    items: [
-      { id: 6, name: 'Es Teh Lemon Jumbo', price: 8000, discountPercent: null, image: 'es-teh', description: 'Teh lemon segar ukuran jumbo.', stock: 30 },
-      { id: 7, name: 'Es Jeruk Peras', price: 10000, discountPercent: 15, image: 'es-jeruk', description: 'Jeruk peras segar dengan es batu.', stock: 25 },
-      { id: 8, name: 'Kopi Susu Gula Aren', price: 15000, discountPercent: null, image: 'kopi', description: 'Kopi robusta dengan susu dan gula aren asli.', stock: 20 },
-      { id: 9, name: 'Milkshake Coklat', price: 18000, discountPercent: 20, image: 'milkshake', description: 'Milkshake coklat creamy dengan whipped cream.', stock: 15 },
-    ],
-  },
-  {
-    name: 'Snack',
-    icon: 'SN',
-    items: [
-      { id: 10, name: 'Dimsum Ayam Isi 5', price: 15000, discountPercent: 15, image: 'dimsum', description: 'Dimsum lembut dengan saus pedas manis.', stock: 20 },
-      { id: 11, name: 'Paket Ngemil Mix', price: 22000, discountPercent: 20, image: 'snack-mix', description: 'Kentang, sosis, nugget, dan saus pilihan.', stock: 15 },
-      { id: 12, name: 'Risol Mayo Isi 4', price: 12000, discountPercent: null, image: 'risol', description: 'Risol renyah isi mayones dan smoked beef.', stock: 25 },
-      { id: 13, name: 'Pisang Goreng Crispy', price: 10000, discountPercent: 20, image: 'pisang-goreng', description: 'Pisang goreng tepung crispy dengan topping keju.', stock: 18 },
-    ],
-  },
-];
-
 export const IMAGE_KEYS = Object.keys(FOOD_IMAGES).filter((k) => k !== 'default');
