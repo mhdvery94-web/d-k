@@ -1529,7 +1529,7 @@ img { display: block; max-width: 100%; }
 .dk-discount-badge {
   display: inline-block;
   padding: 4px 10px;
-  background: var(--dk-ember);
+  background: #ff0000 var(--dk-ember);
   color: white;
   border-radius: 0;
   font-size: 12px;
