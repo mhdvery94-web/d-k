@@ -460,6 +460,19 @@ function ReceiptPage({ data, onMenu, onTracking }) {
       if (r.success) setStoreSettings(r.data);
     }).catch(() => {});
   }, []);
+
+  // Hitung addressDetail DULU sebelum dipakai di shareText
+  const locationParts = [
+    order?.customerKelurahan,
+    order?.customerKecamatan,
+    order?.customerKota,
+    order?.customerProvinsi,
+  ].filter(Boolean);
+  const addressDetail = locationParts.reduce((address, part) => {
+    const separatorIndex = address.toLocaleLowerCase('id-ID').indexOf(`, ${String(part).toLocaleLowerCase('id-ID')}`);
+    return separatorIndex >= 0 ? address.slice(0, separatorIndex).trim() : address;
+  }, String(order?.customerAddress || '').trim());
+
   const pad35 = (l, r) => {
     const maxW = 35;
     const gap = maxW - l.length - r.length;
@@ -499,16 +512,6 @@ function ReceiptPage({ data, onMenu, onTracking }) {
     '  Terima kasih atas pesanan Anda',
   ].filter(Boolean);
   const shareText = shareLines.join('\n');
-  const locationParts = [
-    order?.customerKelurahan,
-    order?.customerKecamatan,
-    order?.customerKota,
-    order?.customerProvinsi,
-  ].filter(Boolean);
-  const addressDetail = locationParts.reduce((address, part) => {
-    const separatorIndex = address.toLocaleLowerCase('id-ID').indexOf(`, ${String(part).toLocaleLowerCase('id-ID')}`);
-    return separatorIndex >= 0 ? address.slice(0, separatorIndex).trim() : address;
-  }, String(order?.customerAddress || '').trim());
 
   const buildReceiptArtifacts = useCallback(async () => {
     const node = printRef.current;
@@ -538,7 +541,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
       canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Gagal membuat gambar struk')), 'image/jpeg', 0.82);
     });
     return { jpegBlob };
-  }, [orderNumber]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -641,7 +644,35 @@ function ReceiptPage({ data, onMenu, onTracking }) {
     setShareMenuOpen(false);
   };
 
-  if (!order) return null;
+  if (!order) {
+    return (
+      <main className="dk-main dk-simple-page">
+        <section className="dk-receipt">
+          <div className="dk-pending-failed">
+            <div className="dk-pending-icon">⚠</div>
+            <h2>Data Struk Tidak Tersedia</h2>
+            <p>Terjadi kesalahan saat memuat data pesanan</p>
+            <button className="dk-btn-pay" onClick={onMenu}>Kembali ke Menu</button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!items || items.length === 0) {
+    return (
+      <main className="dk-main dk-simple-page">
+        <section className="dk-receipt">
+          <div className="dk-pending-failed">
+            <div className="dk-pending-icon">⚠</div>
+            <h2>Data Pesanan Tidak Lengkap</h2>
+            <p>Items pesanan tidak ditemukan</p>
+            <button className="dk-btn-pay" onClick={onMenu}>Kembali ke Menu</button>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="dk-main dk-simple-page">

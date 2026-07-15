@@ -55,6 +55,13 @@ README.md
 fe/README.md
 fe/desain.md
 
+# Debug & deploy documentation
+DEBUG-*.md
+UPDATE-*.md
+DEPLOY-*.md
+RINGKASAN-*.md
+PLAN-*.md
+
 # AI agent config
 .kilocode/
 .kilo/

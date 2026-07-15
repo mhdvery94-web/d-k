@@ -67,7 +67,14 @@ async function createOrderFromPending(pending) {
       await menuModel.decrementStock(tx, item.menuId, item.quantity);
     }
     await tx.pendingPayment.update({ where: { id: locked.id }, data: { status: 'paid', paidAt: new Date() } });
-    return tx.order.findUnique({ where: { id: order.id }, include: { items: true } });
+    
+    // Re-fetch order dengan items untuk memastikan data lengkap
+    const orderWithItems = await tx.order.findUnique({ 
+      where: { id: order.id }, 
+      include: { items: true } 
+    });
+    
+    return orderWithItems;
   });
 }
 
