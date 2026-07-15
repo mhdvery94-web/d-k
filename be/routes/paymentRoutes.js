@@ -9,6 +9,9 @@ const orderItemModel = require('../models/orderItemModel');
 const orderSequenceModel = require('../models/orderSequenceModel');
 const { validateOrderData, normalizePhone } = require('../utils/validators');
 const { broadcastNotification } = require('./notificationRoutes');
+const { calculateOrderDiscount } = require('../services/discountService');
+const shippingZoneService = require('../services/shippingZoneService');
+const appSettings = require('../services/appSettingsService');
 
 const snap = new midtransClient.Snap({
   isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
@@ -47,6 +50,11 @@ async function createOrderFromPending(pending) {
         subtotal: locked.subtotal,
         serviceFee: locked.serviceFee,
         deliveryFee: locked.deliveryFee,
+        discountPercent: locked.discountPercent,
+        discountAmount: locked.discountAmount,
+        packingFee: locked.packingFee,
+        shippingZoneCode: locked.shippingZoneCode,
+        shippingDistanceKm: locked.shippingDistanceKm,
         total: locked.total,
         paymentStatus: 'paid',
         midtransTransactionId: locked.midtransTransactionId || locked.sessionToken,
@@ -72,6 +80,23 @@ function isValidMidtransSignature(body) {
   return signature === body.signature_key;
 }
 
+// POST /api/checkout/shipping - Calculate shipping preview (public)
+router.post('/checkout/shipping', async (req, res, next) => {
+  try {
+    const { customerLatitude, customerLongitude } = req.body;
+    if (!customerLatitude || !customerLongitude) {
+      return res.status(400).json({ success: false, message: 'customerLatitude dan customerLongitude wajib diisi' });
+    }
+    const result = await shippingZoneService.calculateShipping(
+      parseFloat(customerLatitude),
+      parseFloat(customerLongitude)
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/payments/create - Create payment (public)
 router.post('/create', async (req, res, next) => {
   try {
@@ -96,8 +121,33 @@ router.post('/create', async (req, res, next) => {
       return { menuId, name: menu.name, quantity, price: finalPrice, discountPercent, subtotal: finalPrice * quantity, notes: item.notes || null };
     });
     const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-    const serviceFee = Math.round(subtotal * 0.1);
-    const total = subtotal + serviceFee;
+
+    // Order-level discount (default 0, admin can set)
+    const discountPercent = Number(req.body.discountPercent || 0);
+    const discountAmount = calculateOrderDiscount(subtotal, discountPercent);
+
+    // Shipping calculation (re-validate in backend)
+    let deliveryFee = 0;
+    let shippingZoneCode = null;
+    let shippingDistanceKm = null;
+    const custLat = parseFloat(req.body.customerLatitude);
+    const custLng = parseFloat(req.body.customerLongitude);
+    if (custLat && custLng) {
+      const shipping = await shippingZoneService.calculateShipping(custLat, custLng);
+      if (!shipping.outOfRange) {
+        deliveryFee = shipping.tariff;
+        shippingZoneCode = shipping.zoneCode;
+        shippingDistanceKm = shipping.distanceKm;
+      }
+    }
+
+    // Packing fee from app settings (admin config, not from FE)
+    const packingFee = await appSettings.getPackingFee();
+
+    // New formula: subtotal - discount + delivery + packing
+    const total = subtotal - discountAmount + deliveryFee + packingFee;
+    const serviceFee = 0; // deprecated, kept for backward-compat column
+
     const sessionToken = crypto.randomUUID();
 
     const pending = await pendingPaymentModel.create({
@@ -116,6 +166,12 @@ router.post('/create', async (req, res, next) => {
       items,
       subtotal,
       serviceFee,
+      deliveryFee,
+      discountPercent,
+      discountAmount,
+      packingFee,
+      shippingZoneCode,
+      shippingDistanceKm,
       total,
     });
 
@@ -130,7 +186,7 @@ router.post('/create', async (req, res, next) => {
       await pendingPaymentModel.updateMidtransData(pending.id, { midtransTransactionId: sessionToken, paymentUrl: transaction.redirect_url });
     }
 
-    res.status(201).json({ success: true, message: 'Pembayaran dibuat', data: { sessionToken, snapToken, total } });
+    res.status(201).json({ success: true, message: 'Pembayaran dibuat', data: { sessionToken, snapToken, total, deliveryFee, shippingZoneCode, shippingDistanceKm, discountAmount, packingFee } });
   } catch (error) {
     next(error);
   }

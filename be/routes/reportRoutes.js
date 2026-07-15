@@ -129,4 +129,57 @@ router.get('/export/csv', authMiddleware.verifyToken, authMiddleware.isAdmin, as
   }
 });
 
+// GET /api/reports/daily-rekap - Laporan Rekap Harian (admin only)
+router.get('/daily-rekap', authMiddleware.verifyToken, authMiddleware.isAdmin, async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) return res.status(400).json({ success: false, message: 'startDate dan endDate wajib diisi' });
+
+    const orders = await orderModel.findAll({ startDate, endDate });
+    const paidOrders = orders.filter((o) => o.paymentStatus === 'paid');
+
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + Number(o.total), 0);
+    const totalSubtotal = paidOrders.reduce((sum, o) => sum + Number(o.subtotal), 0);
+    const totalDiscount = paidOrders.reduce((sum, o) => sum + Number(o.discountAmount || 0), 0);
+    const totalDelivery = paidOrders.reduce((sum, o) => sum + Number(o.deliveryFee || 0), 0);
+    const totalPacking = paidOrders.reduce((sum, o) => sum + Number(o.packingFee || 0), 0);
+
+    const zoneMap = new Map();
+    const itemMap = new Map();
+
+    paidOrders.forEach((order) => {
+      const z = order.shippingZoneCode || '-';
+      const prev = zoneMap.get(z) || { zoneCode: z, count: 0, totalDelivery: 0 };
+      prev.count += 1;
+      prev.totalDelivery += Number(order.deliveryFee || 0);
+      zoneMap.set(z, prev);
+
+      order.items.forEach((item) => {
+        const p = itemMap.get(item.menuName) || { menuName: item.menuName, qty: 0, revenue: 0 };
+        p.qty += item.quantity;
+        p.revenue += Number(item.subtotal);
+        itemMap.set(item.menuName, p);
+      });
+    });
+
+    res.json({
+      success: true,
+      data: {
+        startDate,
+        endDate,
+        totalOrders: paidOrders.length,
+        totalRevenue,
+        totalSubtotal,
+        totalDiscount,
+        totalDelivery,
+        totalPacking,
+        zoneBreakdown: Array.from(zoneMap.values()).sort((a, b) => b.count - a.count),
+        itemBreakdown: Array.from(itemMap.values()).sort((a, b) => b.qty - a.qty),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

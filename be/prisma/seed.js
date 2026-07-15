@@ -192,6 +192,46 @@ async function main() {
   ]);
   console.log('✅ Sample menus created:', menus.length, 'items');
 
+  // Create default shipping zones
+  const shippingZones = await Promise.all([
+    prisma.shippingZone.upsert({
+      where: { kodeZona: 'Z1' },
+      update: {},
+      create: { kodeZona: 'Z1', jarakMin: 0, jarakMax: 3, tarif: 0, isActive: true },
+    }),
+    prisma.shippingZone.upsert({
+      where: { kodeZona: 'Z2' },
+      update: {},
+      create: { kodeZona: 'Z2', jarakMin: 3.01, jarakMax: 6, tarif: 0, isActive: true },
+    }),
+    prisma.shippingZone.upsert({
+      where: { kodeZona: 'Z3' },
+      update: {},
+      create: { kodeZona: 'Z3', jarakMin: 6.01, jarakMax: 10, tarif: 0, isActive: true },
+    }),
+    prisma.shippingZone.upsert({
+      where: { kodeZona: 'Z4' },
+      update: {},
+      create: { kodeZona: 'Z4', jarakMin: 10.01, jarakMax: null, tarif: 0, isActive: true },
+    }),
+  ]);
+  console.log('✅ Shipping zones created:', shippingZones.length, 'zones');
+
+  // Create default app settings
+  const defaultSettings = [
+    { key: 'packing_fee', value: '0' },
+    { key: 'wa_admin', value: '0812-XXXX-XXXX' },
+    { key: 'store_address', value: 'Jl. Jambu No 70D, Kedaung, Sawangan, Kota Depok' },
+  ];
+  for (const s of defaultSettings) {
+    await prisma.appSetting.upsert({
+      where: { key: s.key },
+      update: {},
+      create: s,
+    });
+  }
+  console.log('✅ App settings created:', defaultSettings.length, 'keys');
+
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📊 Summary:');
   console.log('   - Admin user: admin / admin123');

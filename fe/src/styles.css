@@ -2236,7 +2236,8 @@ img { display: block; max-width: 100%; }
 .dk-seller-checkbox span { min-width: 0; overflow-wrap: anywhere; }
 .dk-seller-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; padding-top: 8px; border-top: 1px dashed #C7C4A8; }
 .dk-admin-order-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 4px; }
-.dk-admin-order-actions button { width: 100%; min-height: 40px; white-space: normal; line-height: 1.2; }
+.dk-admin-order-actions button, .dk-admin-order-actions select { width: 100%; min-height: 40px; white-space: normal; line-height: 1.2; }
+.dk-struk-select { padding: 8px 10px; border: 1.5px solid var(--dk-blue); border-radius: 0; font-size: 13px; font-weight: 700; color: var(--dk-blue); background: #fff; cursor: pointer; }
 .dk-btn-order-action { display: inline-flex; align-items: center; justify-content: center; padding: 10px 12px; border: 1.5px solid transparent; border-radius: 0; font-size: 13px; font-weight: 800; transition: background 0.15s, border-color 0.15s, color 0.15s; }
 .dk-btn-order-primary { background: var(--dk-blue); color: #fff; }
 .dk-btn-order-primary:hover { background: var(--dk-blue-dark); }

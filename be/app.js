@@ -18,6 +18,8 @@ const postalCodeRoutes = require('./routes/postalCodeRoutes');
 const checklistRoutes = require('./routes/checklistRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const shippingZoneRoutes = require('./routes/shippingZoneRoutes');
+const settingRoutes = require('./routes/settingRoutes');
 const pendingPaymentModel = require('./models/pendingPaymentModel');
 
 // Import middleware
@@ -58,6 +60,8 @@ app.use('/api/postal-code', postalCodeRoutes);
 app.use('/api/checklist', checklistRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes.router);
+app.use('/api/shipping-zones', shippingZoneRoutes);
+app.use('/api/settings', settingRoutes);
 
 function startPendingPaymentCron() {
   return cron.schedule('* * * * *', async () => {

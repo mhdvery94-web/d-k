@@ -129,8 +129,6 @@ function CategorySection({ category, cart, menus, onAdd, onIncrease, onDecrease 
 /* ── Cart Review ── */
 function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDecrease }) {
   const subtotal = cart.reduce((s, c) => s + getDiscountedPrice(c) * c.qty, 0);
-  const tax = Math.round(subtotal * 0.1);
-  const total = subtotal + tax;
 
   // step: 'cart' → review keranjang, 'info' → data pelanggan, 'confirm' → pembayaran
   const [step, setStep] = useState('cart');
@@ -148,6 +146,33 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
   const [gpsStatus, setGpsStatus] = useState(''); // '', 'loading', 'success', 'error'
   const [formError, setFormError] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [shippingInfo, setShippingInfo] = useState(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [packingFee, setPackingFee] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/settings/public').then(r => r.json()).then(r => {
+      if (r.success) setPackingFee(r.data.packingFee || 0);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!latitude || !longitude) { setShippingInfo(null); return; }
+    setShippingLoading(true);
+    fetch('/api/payments/checkout/shipping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerLatitude: latitude, customerLongitude: longitude }),
+    })
+      .then(r => r.json())
+      .then(r => { if (r.success) setShippingInfo(r.data); })
+      .catch(() => setShippingInfo(null))
+      .finally(() => setShippingLoading(false));
+  }, [latitude, longitude]);
+
+  const deliveryFee = shippingInfo?.tariff || 0;
+  const discountAmount = 0;
+  const grandTotal = subtotal - discountAmount + deliveryFee + packingFee;
 
   useEffect(() => {
     if (customerPostalCode.length !== 5) { setLocations([]); setSelectedLocation(null); return; }
@@ -227,10 +252,12 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
           </div>
 
        <div className="dk-review-bill">
-        <div className="dk-bill-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-            <div className="dk-bill-row"><span>Biaya Layanan (10%)</span><strong>{money(tax)}</strong></div>
-  <div className="dk-bill-row dk-bill-total"><span>Total</span><strong>{money(total)}</strong></div>
-     </div>
+         <div className="dk-bill-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
+         {shippingInfo && <div className="dk-bill-row"><span>Ongkir ({shippingInfo.zoneCode}, {shippingInfo.distanceKm} km)</span><strong>{money(deliveryFee)}</strong></div>}
+         {!shippingInfo && latitude && <div className="dk-bill-row"><span>Ongkir</span><strong>{shippingLoading ? 'Menghitung...' : money(0)}</strong></div>}
+         <div className="dk-bill-row"><span>Biaya Packing</span><strong>{money(packingFee)}</strong></div>
+         <div className="dk-bill-row dk-bill-total"><span>Total</span><strong>{money(grandTotal)}</strong></div>
+       </div>
 
  <div className="dk-review-summary">
             <div className="dk-review-row"><span>Nama</span><strong>{customerName}</strong></div>
@@ -238,17 +265,18 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
             <div className="dk-review-row"><span>Metode</span><strong>QRIS</strong></div>
     </div>
           <div className="dk-payment-note">QRIS sandbox Midtrans akan terbuka setelah tombol bayar ditekan.</div>
-          {formError && <div className="dk-form-error">{formError}</div>}
+          {shippingInfo?.outOfRange && <div className="dk-form-error">Alamat di luar jangkauan pengiriman. Hubungi admin.</div>}
+          {!shippingInfo?.outOfRange && formError && <div className="dk-form-error">{formError}</div>}
           <div className="dk-sheet-footer">
             <button className="dk-btn-half dk-btn-half-back" onClick={() => setStep('info')}>
               <MaterialIcon>arrow_back</MaterialIcon>
               Kembali
             </button>
-            <button className="dk-btn-pay" disabled={paymentLoading} onClick={async () => {
+            <button className="dk-btn-pay" disabled={paymentLoading || shippingInfo?.outOfRange} onClick={async () => {
               setPaymentLoading(true);
               setFormError('');
               try {
-                await onCheckout(cart, total, customerInfo);
+                await onCheckout(cart, grandTotal, customerInfo);
                 onClose();
               } catch (error) {
                 setFormError(error.message || 'Gagal membuat pembayaran');
@@ -374,8 +402,8 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
         </div>
         <div className="dk-review-bill">
           <div className="dk-bill-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-          <div className="dk-bill-row"><span>Biaya Layanan (10%)</span><strong>{money(tax)}</strong></div>
-          <div className="dk-bill-row dk-bill-total"><span>Total</span><strong>{money(total)}</strong></div>
+          <div className="dk-bill-row"><span>Biaya Packing</span><strong>{money(packingFee)}</strong></div>
+          <div className="dk-bill-row dk-bill-total"><span>Total (sebelum ongkir)</span><strong>{money(subtotal + packingFee)}</strong></div>
         </div>
         <div className="dk-sheet-footer">
           <button className="dk-btn-half dk-btn-half-back" onClick={onClose}>
@@ -423,9 +451,54 @@ function ReceiptPage({ data, onMenu, onTracking }) {
   const [busy, setBusy] = useState(false);
   const [artifactsReady, setArtifactsReady] = useState(false);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [storeSettings, setStoreSettings] = useState({});
   const items = order?.items || [];
   const orderNumber = order?.orderNumber || order?.id;
-  const shareText = `Resi Pesanan Dapur Kemas\n\nNo. Pesanan: ${orderNumber}\nNama: ${order?.customerName || '-'}\nTotal: ${money(Number(order?.total || 0))}\n\nTerima kasih atas pesanan Anda.`;
+
+  useEffect(() => {
+    fetch('/api/settings/public').then(r => r.json()).then(r => {
+      if (r.success) setStoreSettings(r.data);
+    }).catch(() => {});
+  }, []);
+  const pad35 = (l, r) => {
+    const maxW = 35;
+    const gap = maxW - l.length - r.length;
+    return l + (gap > 0 ? ' '.repeat(gap) : ' ') + r;
+  };
+  const sep35 = '='.repeat(35);
+  const dash35 = '-'.repeat(35);
+  const shareLines = [
+    '       DAPUR KEMAS',
+    storeSettings.storeAddress || '',
+    storeSettings.waAdmin ? `WA: ${storeSettings.waAdmin}` : '',
+    sep35,
+    pad35('No. Nota:', orderNumber),
+    pad35('Tanggal:', formatDate(order?.createdAt || new Date())),
+    pad35('Status:', 'LUNAS'),
+    dash35,
+    `Penerima: ${order?.customerName || '-'}`,
+    `HP: ${order?.customerPhone || '-'}`,
+    `Alamat: ${addressDetail || '-'}`,
+    dash35,
+    'Rincian Pesanan:',
+    ...items.map(item => {
+      const qty = item.quantity || item.qty || 1;
+      const name = item.menuName || item.name;
+      const sub = Number(item.subtotal || 0);
+      return `${qty}x ${name.substring(0, 20).padEnd(20)} ${money(sub)}`;
+    }),
+    dash35,
+    pad35('Subtotal:', money(Number(order?.subtotal || 0))),
+    ...(Number(order?.discountAmount || 0) > 0 ? [pad35(`Diskon (${order.discountPercent}%):`, `-${money(Number(order.discountAmount))}`)] : []),
+    ...(Number(order?.deliveryFee || 0) > 0 ? [pad35(`Ongkir${order.shippingZoneCode ? ` ${order.shippingZoneCode}` : ''}:`, money(Number(order.deliveryFee)))] : []),
+    ...(Number(order?.packingFee || 0) > 0 ? [pad35('Biaya Packing:', money(Number(order.packingFee)))] : []),
+    sep35,
+    pad35('TOTAL BAYAR:', money(Number(order?.total || 0))),
+    sep35,
+    '   -- PEMBAYARAN VALID --',
+    '  Terima kasih atas pesanan Anda',
+  ].filter(Boolean);
+  const shareText = shareLines.join('\n');
   const locationParts = [
     order?.customerKelurahan,
     order?.customerKecamatan,
@@ -577,7 +650,8 @@ function ReceiptPage({ data, onMenu, onTracking }) {
           <div className="dk-receipt-header">
           <img src="/icon.png" alt="Dapur Kemas" className="dk-receipt-logo-img" />
           <h2>DAPUR KEMAS</h2>
-          <p>Aplikasi Pemesanan Makanan</p>
+          <p>{storeSettings.storeAddress || 'Jl. Jambu No 70D, Kedaung, Sawangan, Kota Depok'}</p>
+          {storeSettings.waAdmin && <p>WA: {storeSettings.waAdmin}</p>}
           </div>
 
           <div className="dk-receipt-meta">
@@ -616,13 +690,16 @@ function ReceiptPage({ data, onMenu, onTracking }) {
 
           <div className="dk-receipt-summary">
           {order.subtotal && <div className="dk-receipt-summary-row"><span>Subtotal</span><span>{money(Number(order.subtotal))}</span></div>}
-          {order.serviceFee && <div className="dk-receipt-summary-row"><span>Biaya Layanan (10%)</span><span>{money(Number(order.serviceFee))}</span></div>}
-          <div className="dk-receipt-summary-row dk-receipt-summary-total"><span>TOTAL</span><strong>{money(Number(order.total || 0))}</strong></div>
+          {Number(order.discountAmount || 0) > 0 && <div className="dk-receipt-summary-row"><span>Diskon ({order.discountPercent || 0}%)</span><span>-{money(Number(order.discountAmount))}</span></div>}
+          {Number(order.deliveryFee || 0) > 0 && <div className="dk-receipt-summary-row"><span>Ongkir{order.shippingZoneCode ? ` (${order.shippingZoneCode}, ${order.shippingDistanceKm || '?'} km)` : ''}</span><span>{money(Number(order.deliveryFee))}</span></div>}
+          {Number(order.packingFee || 0) > 0 && <div className="dk-receipt-summary-row"><span>Biaya Packing</span><span>{money(Number(order.packingFee))}</span></div>}
+          {Number(order.serviceFee || 0) > 0 && Number(order.packingFee || 0) === 0 && <div className="dk-receipt-summary-row"><span>Biaya Layanan</span><span>{money(Number(order.serviceFee))}</span></div>}
+          <div className="dk-receipt-summary-row dk-receipt-summary-total"><span>TOTAL BAYAR</span><strong>{money(Number(order.total || 0))}</strong></div>
           </div>
 
           <div className="dk-receipt-footer">
+          <p>-- PEMBAYARAN VALID --</p>
           <p>Terima kasih atas pesanan Anda.</p>
-          <p>Pesanan Anda sedang diproses oleh Dapur Kemas</p>
             <p className="dk-receipt-legal">Struk ini adalah bukti pembayaran yang sah.</p>
           </div>
         </div>
@@ -1009,10 +1086,11 @@ return ex ? c.map((x) => x.id === item.id ? { ...x, qty: x.qty + 1 } : x) : [...
       customerKecamatan: customerInfo.customerKecamatan || '',
       customerKota: customerInfo.customerKota || '',
       customerProvinsi: customerInfo.customerProvinsi || '',
-      latitude: customerInfo.latitude || null,
-      longitude: customerInfo.longitude || null,
+      customerLatitude: customerInfo.latitude || null,
+      customerLongitude: customerInfo.longitude || null,
       items: cartItems.map((item) => ({ menuId: item.id, quantity: item.qty, note: item.note || '' })),
-      orderNotes: customerInfo.orderNotes || '',
+      notes: customerInfo.orderNotes || '',
+      discountPercent: 0,
     };
 
     try {

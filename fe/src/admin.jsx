@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { FALLBACK_IMG, money, formatDate, todayStr } from './data.js';
+import { buildStrukPembayaran, buildFormCeklistOps, buildTiketProduksi, buildSlipAlamat, buildNotaRetur, buildLaporanRekap, strukTextToPdf } from './strukTemplates.js';
 import jsPDF from 'jspdf';
 import './styles.css';
 
@@ -843,6 +844,36 @@ function OrderManager() {
     printPdfDoc(checklistPdf);
   }
 
+  function printStruk(order, type) {
+    let text;
+    const state = checklistStates[order.id] || {};
+    switch (type) {
+      case 'pembayaran': text = buildStrukPembayaran(order); break;
+      case 'ceklist': text = buildFormCeklistOps(order, state); break;
+      case 'tiket': text = buildTiketProduksi(order); break;
+      case 'slip': text = buildSlipAlamat(order); break;
+      case 'retur': text = buildNotaRetur(order, { reason: prompt('Alasan pembatalan:') || '' }); break;
+      default: return;
+    }
+    const doc = strukTextToPdf(text, type);
+    printPdfDoc(doc);
+  }
+
+  function saveStruk(order, type) {
+    let text;
+    const state = checklistStates[order.id] || {};
+    switch (type) {
+      case 'pembayaran': text = buildStrukPembayaran(order); break;
+      case 'ceklist': text = buildFormCeklistOps(order, state); break;
+      case 'tiket': text = buildTiketProduksi(order); break;
+      case 'slip': text = buildSlipAlamat(order); break;
+      case 'retur': text = buildNotaRetur(order, { reason: prompt('Alasan pembatalan:') || '' }); break;
+      default: return;
+    }
+    const doc = strukTextToPdf(text, type);
+    doc.save(`struk-${type}-${safeFilePart(order.orderNumber)}.pdf`);
+  }
+
   const nextActions = {
     confirmed: [['preparing', 'Proses Pesanan']],
     preparing: [['packaging', 'Kemas'], ['delivering', 'Kirim Langsung']],
@@ -977,8 +1008,24 @@ function OrderManager() {
                   </div>
 
                   <div className="dk-admin-actions dk-admin-order-actions">
-                    <button className="dk-btn-order-action dk-btn-order-secondary" onClick={() => printSellerChecklist(order)}>Cetak PDF</button>
-                    <button className="dk-btn-order-action dk-btn-order-primary" onClick={() => saveSellerChecklist(order)}>Simpan PDF</button>
+                    <select className="dk-struk-select" defaultValue="" onChange={(e) => { if (e.target.value) { printStruk(order, e.target.value); e.target.value = ''; } }}>
+                      <option value="" disabled>Cetak Struk...</option>
+                      <option value="pembayaran">Struk Pembayaran</option>
+                      <option value="ceklist">Ceklist Pesanan</option>
+                      <option value="tiket">Tiket Produksi</option>
+                      <option value="slip">Slip Alamat</option>
+                      {order.orderStatus === 'cancelled' && <option value="retur">Nota Retur</option>}
+                    </select>
+                    <select className="dk-struk-select" defaultValue="" onChange={(e) => { if (e.target.value) { saveStruk(order, e.target.value); e.target.value = ''; } }}>
+                      <option value="" disabled>Simpan PDF...</option>
+                      <option value="pembayaran">Struk Pembayaran</option>
+                      <option value="ceklist">Ceklist Pesanan</option>
+                      <option value="tiket">Tiket Produksi</option>
+                      <option value="slip">Slip Alamat</option>
+                      {order.orderStatus === 'cancelled' && <option value="retur">Nota Retur</option>}
+                    </select>
+                    <button className="dk-btn-order-action dk-btn-order-secondary" onClick={() => printSellerChecklist(order)}>Cetak Ceklist (A4)</button>
+                    <button className="dk-btn-order-action dk-btn-order-primary" onClick={() => saveSellerChecklist(order)}>Simpan Ceklist (A4)</button>
                     {(nextActions[order.orderStatus] || []).map(([status, label]) => (
                       <button key={status} className="dk-btn-order-action dk-btn-order-success" onClick={() => updateStatus(order, status)}>{label}</button>
                     ))}
@@ -1388,6 +1435,144 @@ function DashboardStats() {
 }
 
 /* ── Admin Dashboard ── */
+/* ── Settings Panel (Zona Ongkir + Pengaturan Toko) ── */
+function SettingsPanel() {
+  const [zones, setZones] = useState([]);
+  const [settings, setSettings] = useState({ packingFee: 0, waAdmin: '', storeAddress: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [editZone, setEditZone] = useState(null);
+  const [zoneForm, setZoneForm] = useState({ kodeZona: '', jarakMin: '', jarakMax: '', tarif: '' });
+
+  const loadZones = async () => {
+    try {
+      const res = await apiCall('/shipping-zones');
+      setZones(res.data || []);
+    } catch (err) { setError(err.message); }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const res = await apiCall('/settings');
+      if (res.data) setSettings(res.data);
+    } catch (err) { setError(err.message); }
+  };
+
+  useEffect(() => {
+    Promise.all([loadZones(), loadSettings()]).finally(() => setLoading(false));
+  }, []);
+
+  const saveSettings = async () => {
+    setError(''); setNotice('');
+    try {
+      await apiCall('/settings', { method: 'PUT', body: JSON.stringify({ packingFee: Number(settings.packingFee), waAdmin: settings.waAdmin, storeAddress: settings.storeAddress }) });
+      setNotice('Pengaturan disimpan');
+      await loadSettings();
+    } catch (err) { setError(err.message); }
+  };
+
+  const openZoneForm = (zone) => {
+    if (zone) {
+      setEditZone(zone);
+      setZoneForm({ kodeZona: zone.kodeZona, jarakMin: String(zone.jarakMin), jarakMax: zone.jarakMax != null ? String(zone.jarakMax) : '', tarif: String(zone.tarif) });
+    } else {
+      setEditZone(null);
+      setZoneForm({ kodeZona: '', jarakMin: '', jarakMax: '', tarif: '' });
+    }
+  };
+
+  const saveZone = async () => {
+    setError(''); setNotice('');
+    const payload = {
+      kodeZona: zoneForm.kodeZona,
+      jarakMin: parseFloat(zoneForm.jarakMin),
+      jarakMax: zoneForm.jarakMax ? parseFloat(zoneForm.jarakMax) : null,
+      tarif: parseInt(zoneForm.tarif, 10),
+    };
+    try {
+      if (editZone) {
+        await apiCall(`/shipping-zones/${editZone.id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      } else {
+        await apiCall('/shipping-zones', { method: 'POST', body: JSON.stringify(payload) });
+      }
+      setNotice(editZone ? 'Zona diperbarui' : 'Zona ditambahkan');
+      setEditZone(null);
+      setZoneForm({ kodeZona: '', jarakMin: '', jarakMax: '', tarif: '' });
+      await loadZones();
+    } catch (err) { setError(err.message); }
+  };
+
+  const deleteZone = async (id) => {
+    if (!confirm('Hapus zona ini?')) return;
+    try {
+      await apiCall(`/shipping-zones/${id}`, { method: 'DELETE' });
+      setNotice('Zona dihapus');
+      await loadZones();
+    } catch (err) { setError(err.message); }
+  };
+
+  const toggleZone = async (id) => {
+    try {
+      await apiCall(`/shipping-zones/${id}/toggle`, { method: 'PATCH' });
+      await loadZones();
+    } catch (err) { setError(err.message); }
+  };
+
+  if (loading) return <div className="dk-admin-content"><p className="dk-admin-loading">Memuat pengaturan...</p></div>;
+
+  return (
+    <div className="dk-admin-content">
+      {error && <div className="dk-login-error dk-admin-feedback">{error}</div>}
+      {notice && <div className="dk-login-success dk-admin-feedback">{notice}</div>}
+
+      <h3 style={{ margin: '0 0 12px' }}>Zona Ongkir</h3>
+      <table className="dk-admin-table">
+        <thead><tr><th>Kode</th><th>Jarak Min</th><th>Jarak Max</th><th>Tarif</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>
+          {zones.map(z => (
+            <tr key={z.id}>
+              <td><strong>{z.kodeZona}</strong></td>
+              <td>{z.jarakMin} km</td>
+              <td>{z.jarakMax != null ? `${z.jarakMax} km` : '∞'}</td>
+              <td>{money(z.tarif)}</td>
+              <td><span className={z.isActive ? 'dk-status-badge dk-status-completed' : 'dk-status-badge dk-status-cancelled'}>{z.isActive ? 'Aktif' : 'Nonaktif'}</span></td>
+              <td>
+                <div className="dk-admin-actions">
+                  <button className="dk-btn-edit" title="Edit" onClick={() => openZoneForm(z)}><span className="material-symbols-outlined" style={{fontSize:18}}>edit</span></button>
+                  <button className="dk-btn-outline" title="Toggle" onClick={() => toggleZone(z.id)}>{z.isActive ? 'Off' : 'On'}</button>
+                  <button className="dk-btn-delete-min" title="Hapus" onClick={() => deleteZone(z.id)}><span className="material-symbols-outlined" style={{fontSize:18}}>delete</span></button>
+                </div>
+              </td>
+            </tr>
+          ))}
+          {zones.length === 0 && <tr><td colSpan={6} className="dk-admin-empty">Belum ada zona ongkir</td></tr>}
+        </tbody>
+      </table>
+
+      <div style={{ display: 'flex', gap: 8, margin: '12px 0', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div><label style={{ fontSize: 12 }}>Kode</label><input className="dk-form-input" style={{ width: 60 }} value={zoneForm.kodeZona} onChange={e => setZoneForm(f => ({ ...f, kodeZona: e.target.value }))} placeholder="Z5" /></div>
+        <div><label style={{ fontSize: 12 }}>Min (km)</label><input className="dk-form-input" style={{ width: 70 }} type="number" value={zoneForm.jarakMin} onChange={e => setZoneForm(f => ({ ...f, jarakMin: e.target.value }))} /></div>
+        <div><label style={{ fontSize: 12 }}>Max (km)</label><input className="dk-form-input" style={{ width: 70 }} type="number" value={zoneForm.jarakMax} onChange={e => setZoneForm(f => ({ ...f, jarakMax: e.target.value }))} placeholder="∞" /></div>
+        <div><label style={{ fontSize: 12 }}>Tarif (Rp)</label><input className="dk-form-input" style={{ width: 90 }} type="number" value={zoneForm.tarif} onChange={e => setZoneForm(f => ({ ...f, tarif: e.target.value }))} /></div>
+        <button className="dk-btn-primary" onClick={saveZone}>{editZone ? 'Update' : 'Tambah'} Zona</button>
+        {editZone && <button className="dk-btn-outline" onClick={() => { setEditZone(null); setZoneForm({ kodeZona: '', jarakMin: '', jarakMax: '', tarif: '' }); }}>Batal</button>}
+      </div>
+
+      <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #BDC9C8' }} />
+
+      <h3 style={{ margin: '0 0 12px' }}>Pengaturan Toko</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 400 }}>
+        <div><label style={{ fontSize: 12 }}>Biaya Packing (Rp)</label><input className="dk-form-input" type="number" value={settings.packingFee} onChange={e => setSettings(s => ({ ...s, packingFee: e.target.value }))} /></div>
+        <div><label style={{ fontSize: 12 }}>No. WA Admin</label><input className="dk-form-input" value={settings.waAdmin} onChange={e => setSettings(s => ({ ...s, waAdmin: e.target.value }))} /></div>
+        <div><label style={{ fontSize: 12 }}>Alamat Toko</label><input className="dk-form-input" value={settings.storeAddress} onChange={e => setSettings(s => ({ ...s, storeAddress: e.target.value }))} /></div>
+        <div style={{ fontSize: 12, color: '#6E7979' }}>Koordinat toko (lat/lng) diatur via .env di server, bukan di sini.</div>
+        <button className="dk-btn-primary" onClick={saveSettings} style={{ alignSelf: 'flex-start' }}>Simpan Pengaturan</button>
+      </div>
+    </div>
+  );
+}
+
 function AdminDashboard({ onLogout, onSettings }) {
   const [menus, setMenus] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -1780,6 +1965,10 @@ function AdminDashboard({ onLogout, onSettings }) {
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 13L7 9L10 11L13 6M13 6H10M13 6V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="1" y="1" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.5"/></svg>
             Laporan
           </button>
+          <button className={`dk-admin-nav-btn ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.3 3.3l1.4 1.4M13.3 13.3l1.4 1.4M3.3 14.7l1.4-1.4M13.3 4.7l1.4-1.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            Pengaturan
+          </button>
         </div>
 
         {tab === 'dashboard' && (
@@ -1892,6 +2081,15 @@ function AdminDashboard({ onLogout, onSettings }) {
                 <button className="dk-btn-order-action dk-btn-order-primary" onClick={handleDownloadPDF}>
                   <span className="material-symbols-outlined" style={{fontSize:16}}>download</span> Simpan PDF
                 </button>
+                <button className="dk-btn-order-action dk-btn-order-secondary" onClick={async () => {
+                  const { start, end } = getReportRange();
+                  try {
+                    const res = await apiCall(`/reports/daily-rekap?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`);
+                    const text = buildLaporanRekap(res.data);
+                    const doc = strukTextToPdf(text, 'rekap');
+                    printPdfDoc(doc);
+                  } catch (err) { alert(err.message || 'Gagal cetak rekap'); }
+                }}>Cetak Rekap Struk</button>
               </div>
             </div>
             <div className="dk-search-row dk-report-search no-print">
@@ -1984,6 +2182,8 @@ function AdminDashboard({ onLogout, onSettings }) {
             </ScrollView>
           </div>
         )}
+
+        {tab === 'settings' && <SettingsPanel />}
       </div>
 
       {showMenuForm && (

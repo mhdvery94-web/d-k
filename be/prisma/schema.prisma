@@ -71,8 +71,13 @@ model PendingPayment {
   items                 Json
   subtotal              Decimal   @db.Decimal(10, 2)
   serviceFee            Decimal   @default(0) @map("service_fee") @db.Decimal(10, 2)
-  deliveryFee           Decimal   @default(0) @map("delivery_fee") @db.Decimal(10, 2)
-  total                 Decimal   @db.Decimal(10, 2)
+  deliveryFee           Decimal   @default(0) @map("delivery_fee") @db.Decimal(12, 2)
+  discountPercent       Int       @default(0) @map("discount_percent")
+  discountAmount        Decimal   @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  packingFee           Decimal   @default(0) @map("packing_fee") @db.Decimal(12, 2)
+  shippingZoneCode     String?   @map("shipping_zone_code") @db.VarChar(10)
+  shippingDistanceKm   Float?    @map("shipping_distance_km")
+  total                 Decimal   @db.Decimal(12, 2)
   midtransTransactionId String?   @unique @map("midtrans_transaction_id") @db.VarChar(100)
   paymentUrl            String?   @map("payment_url") @db.Text
   qrCodeUrl             String?   @map("qr_code_url") @db.Text
@@ -102,8 +107,13 @@ model Order {
   notes                 String?    @db.Text
   subtotal              Decimal    @db.Decimal(10, 2)
   serviceFee            Decimal    @default(0) @map("service_fee") @db.Decimal(10, 2)
-  deliveryFee           Decimal    @default(0) @map("delivery_fee") @db.Decimal(10, 2)
-  total                 Decimal    @db.Decimal(10, 2)
+  deliveryFee           Decimal    @default(0) @map("delivery_fee") @db.Decimal(12, 2)
+  discountPercent       Int        @default(0) @map("discount_percent")
+  discountAmount        Decimal    @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  packingFee           Decimal    @default(0) @map("packing_fee") @db.Decimal(12, 2)
+  shippingZoneCode     String?    @map("shipping_zone_code") @db.VarChar(10)
+  shippingDistanceKm   Float?     @map("shipping_distance_km")
+  total                 Decimal    @db.Decimal(12, 2)
   paymentStatus         String     @default("unpaid") @map("payment_status") @db.VarChar(20)
   orderStatus           String     @default("confirmed") @map("order_status") @db.VarChar(20)
   midtransTransactionId String?    @map("midtrans_transaction_id") @db.VarChar(100)
@@ -174,4 +184,28 @@ model ChecklistItem {
   @@index([orderId])
   @@index([menuId])
   @@map("checklist_items")
+}
+
+// Shipping Zones (tarif ongkir berbasis jarak)
+model ShippingZone {
+  id        Int      @id @default(autoincrement())
+  kodeZona  String   @unique @map("kode_zona") @db.VarChar(10)
+  jarakMin  Float    @map("jarak_min")
+  jarakMax  Float?   @map("jarak_max") // null = zona terakhir (tak terhingga)
+  tarif     Int      @db.Int
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("shipping_zones")
+}
+
+// App Settings (key-value untuk packing_fee, wa_admin, store_address, dll)
+model AppSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(50)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
 }
