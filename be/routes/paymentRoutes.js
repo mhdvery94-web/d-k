@@ -146,11 +146,11 @@ router.post('/create', async (req, res, next) => {
 
     const shipping = await shippingZoneService.calculateShipping(custLat, custLng);
     if (shipping.outOfRange) {
-      console.warn('[payments/create] Shipping rejected: out of range', { distanceKm: shipping.distanceKm });
-      return res.status(400).json({ success: false, message: 'Alamat di luar jangkauan pengiriman. Hubungi admin.' });
+      console.warn('[payments/create] Shipping out of configured zones; payment allowed with delivery fee 0 and manual follow-up', { distanceKm: shipping.distanceKm });
+    } else {
+      deliveryFee = Number(shipping.tariff || 0);
+      shippingZoneCode = shipping.zoneCode;
     }
-    deliveryFee = Number(shipping.tariff || 0);
-    shippingZoneCode = shipping.zoneCode;
     shippingDistanceKm = shipping.distanceKm;
 
     // Packing fee from app settings (admin config, not from FE)

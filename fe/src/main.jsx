@@ -195,9 +195,6 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
         setLatitude(pos.coords.latitude);
         setLongitude(pos.coords.longitude);
         setGpsStatus('success');
-        if (!customerAddress) {
-          setCustomerAddress(`Lokasi GPS: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
-        }
       },
       () => {
         setGpsStatus('error');
@@ -220,7 +217,6 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
     if (!latitude || !longitude) { setFormError('Ambil lokasi GPS dulu agar ongkir bisa dihitung sesuai zona.'); return; }
     if (shippingLoading) { setFormError('Ongkir masih dihitung. Tunggu sebentar.'); return; }
     if (!shippingInfo) { setFormError('Ongkir belum berhasil dihitung. Coba ambil lokasi ulang.'); return; }
-    if (shippingInfo.outOfRange) { setFormError('Alamat di luar jangkauan pengiriman. Hubungi admin.'); return; }
     setFormError('');
     setStep('confirm');
   };
@@ -268,14 +264,14 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
             <div className="dk-review-row"><span>Metode</span><strong>QRIS</strong></div>
     </div>
           <div className="dk-payment-note">QRIS sandbox Midtrans akan terbuka setelah tombol bayar ditekan.</div>
-          {shippingInfo?.outOfRange && <div className="dk-form-error">Alamat di luar jangkauan pengiriman. Hubungi admin.</div>}
-          {!shippingInfo?.outOfRange && formError && <div className="dk-form-error">{formError}</div>}
+          {shippingInfo?.outOfRange && <div className="dk-address-preview dk-address-warning">Di luar zona ongkir otomatis. Pesanan tetap bisa dibayar, ongkir tambahan akan dikonfirmasi saat pengantaran.</div>}
+          {formError && <div className="dk-form-error">{formError}</div>}
           <div className="dk-sheet-footer">
             <button className="dk-btn-half dk-btn-half-back" onClick={() => setStep('info')}>
               <MaterialIcon>arrow_back</MaterialIcon>
               Kembali
             </button>
-            <button className="dk-btn-pay" disabled={paymentLoading || shippingInfo?.outOfRange} onClick={async () => {
+            <button className="dk-btn-pay" disabled={paymentLoading} onClick={async () => {
               setPaymentLoading(true);
               setFormError('');
               try {
@@ -360,7 +356,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
               </button>
               {latitude && longitude && <div className="dk-gps-coords">Koordinat: {Number(latitude).toFixed(6)}, {Number(longitude).toFixed(6)}</div>}
               {shippingInfo && !shippingInfo.outOfRange && <div className="dk-address-preview">Ongkir: {money(deliveryFee)} ({shippingInfo.zoneCode}, {shippingInfo.distanceKm} km)</div>}
-              {shippingInfo?.outOfRange && <div className="dk-address-preview dk-address-warning">Alamat di luar jangkauan pengiriman.</div>}
+              {shippingInfo?.outOfRange && <div className="dk-address-preview dk-address-warning">Di luar zona ongkir otomatis. Pesanan tetap bisa lanjut; ongkir tambahan akan dikonfirmasi saat pengantaran.</div>}
             </div>
 
             <div className="dk-form-group">
