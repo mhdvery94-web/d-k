@@ -51,8 +51,8 @@ async function getStoreAddress() {
 
 function getStoreCoords() {
   return {
-    lat: parseFloat(process.env.STORE_LAT) || -6.3933,
-    lng: parseFloat(process.env.STORE_LNG) || 106.7817,
+    lat: parseFloat(process.env.STORE_LAT) || -6.377609968253192,
+    lng: parseFloat(process.env.STORE_LNG) || 106.74951326655977,
   };
 }
 
