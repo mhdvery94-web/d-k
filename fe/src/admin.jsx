@@ -176,88 +176,6 @@ function drawPdfFooter(doc) {
   doc.setTextColor(36, 49, 47);
 }
 
-function buildSellerChecklistPdf(order, state = {}) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  let y = drawPdfHeader(doc, 'CHECKLIST PESANAN PENJUAL', `No. ${order.orderNumber}`);
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Informasi Pesanan', 14, y);
-  y += 7;
-  doc.setFont('helvetica', 'normal');
-  [
-    ['No. Pesanan', order.orderNumber],
-    ['Tanggal', formatDate(order.createdAt)],
-    ['Pelanggan', order.customerName],
-    ['Telepon', order.customerPhone],
-  ].forEach(([label, value]) => {
-    doc.text(`${label}:`, 14, y);
-    doc.text(String(value || '-'), 46, y);
-    y += 6;
-  });
-
-  const addressLines = doc.splitTextToSize(String(order.customerAddress || '-'), 145);
-  doc.text('Alamat:', 14, y);
-  doc.text(addressLines, 46, y);
-  y += Math.max(6, addressLines.length * 5) + 6;
-
-  y = ensurePdfSpace(doc, y, 18);
-  doc.setFillColor(251, 250, 236);
-  doc.setDrawColor(218, 216, 190);
-  doc.rect(14, y, 182, 8, 'FD');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text('Cek', 18, y + 5.5);
-  doc.text('Qty', 34, y + 5.5);
-  doc.text('Menu', 50, y + 5.5);
-  y += 8;
-
-  doc.setFont('helvetica', 'normal');
-  (order.items || []).forEach((item) => {
-    const lines = doc.splitTextToSize(item.menuName || '-', 130);
-    const rowHeight = Math.max(9, lines.length * 5 + 4);
-    y = ensurePdfSpace(doc, y, rowHeight);
-    doc.setDrawColor(218, 216, 190);
-    doc.rect(18, y + 2, 4, 4);
-    if (state[`item-${item.id}`]) {
-      doc.line(18.8, y + 4, 20, y + 5.2);
-      doc.line(20, y + 5.2, 22, y + 2.8);
-    }
-    doc.text(String(item.quantity || 0), 35, y + 5.5);
-    doc.text(lines, 50, y + 5.5);
-    doc.line(14, y + rowHeight, 196, y + rowHeight);
-    y += rowHeight;
-  });
-
-  y += 8;
-  y = ensurePdfSpace(doc, y, 42);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Validasi Penjual', 14, y);
-  y += 8;
-  [
-    ['Cek 1 - Picking lengkap', state.check1],
-    ['Cek 2 - Packing lengkap', state.check2],
-  ].forEach(([label, checked], index) => {
-    doc.setFont('helvetica', 'normal');
-    doc.rect(18, y - 3.5, 4, 4);
-    if (checked) {
-      doc.line(18.8, y - 1.5, 20, y - 0.3);
-      doc.line(20, y - 0.3, 22, y - 2.7);
-    }
-    doc.text(label, 26, y);
-    const officerKey = `officer${index + 1}`;
-    const officerName = state[officerKey] ? String(state[officerKey]) : '____________________';
-    doc.text(`Petugas ${index + 1}: ${officerName}`, 118, y);
-    y += 9;
-  });
-  y += 5;
-  const notesText = state.notes ? String(state.notes) : '______________________________________________________';
-  doc.text(`Catatan: ${notesText}`, 14, y);
-
-  drawPdfFooter(doc);
-  return doc;
-}
-
 function buildReportPdf({ title, periodLabel, orders, topItems, total }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   let y = drawPdfHeader(doc, `LAPORAN ${title.toUpperCase()}`, periodLabel);
@@ -834,16 +752,6 @@ function OrderManager() {
     }));
   }
 
-  function saveSellerChecklist(order) {
-    const checklistPdf = buildSellerChecklistPdf(order, checklistStates[order.id] || {});
-    checklistPdf.save(`checklist-${safeFilePart(order.orderNumber)}.pdf`);
-  }
-
-  function printSellerChecklist(order) {
-    const checklistPdf = buildSellerChecklistPdf(order, checklistStates[order.id] || {});
-    printPdfDoc(checklistPdf);
-  }
-
   function printStruk(order, type) {
     let text;
     const state = checklistStates[order.id] || {};
@@ -1024,8 +932,6 @@ function OrderManager() {
                       <option value="slip">Slip Alamat</option>
                       {order.orderStatus === 'cancelled' && <option value="retur">Nota Retur</option>}
                     </select>
-                    <button className="dk-btn-order-action dk-btn-order-secondary" onClick={() => printSellerChecklist(order)}>Cetak Ceklist (A4)</button>
-                    <button className="dk-btn-order-action dk-btn-order-primary" onClick={() => saveSellerChecklist(order)}>Simpan Ceklist (A4)</button>
                     {(nextActions[order.orderStatus] || []).map(([status, label]) => (
                       <button key={status} className="dk-btn-order-action dk-btn-order-success" onClick={() => updateStatus(order, status)}>{label}</button>
                     ))}

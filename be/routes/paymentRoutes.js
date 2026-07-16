@@ -139,14 +139,19 @@ router.post('/create', async (req, res, next) => {
     let shippingDistanceKm = null;
     const custLat = parseFloat(req.body.customerLatitude);
     const custLng = parseFloat(req.body.customerLongitude);
-    if (custLat && custLng) {
-      const shipping = await shippingZoneService.calculateShipping(custLat, custLng);
-      if (!shipping.outOfRange) {
-        deliveryFee = shipping.tariff;
-        shippingZoneCode = shipping.zoneCode;
-        shippingDistanceKm = shipping.distanceKm;
-      }
+    if (!Number.isFinite(custLat) || !Number.isFinite(custLng)) {
+      console.warn('[payments/create] Shipping rejected: missing customer coordinates', { hasLatitude: !!req.body.customerLatitude, hasLongitude: !!req.body.customerLongitude });
+      return res.status(400).json({ success: false, message: 'Lokasi pengiriman wajib diambil agar ongkir bisa dihitung' });
     }
+
+    const shipping = await shippingZoneService.calculateShipping(custLat, custLng);
+    if (shipping.outOfRange) {
+      console.warn('[payments/create] Shipping rejected: out of range', { distanceKm: shipping.distanceKm });
+      return res.status(400).json({ success: false, message: 'Alamat di luar jangkauan pengiriman. Hubungi admin.' });
+    }
+    deliveryFee = Number(shipping.tariff || 0);
+    shippingZoneCode = shipping.zoneCode;
+    shippingDistanceKm = shipping.distanceKm;
 
     // Packing fee from app settings (admin config, not from FE)
     const packingFee = await appSettings.getPackingFee();

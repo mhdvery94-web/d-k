@@ -247,8 +247,8 @@ img { display: block; max-width: 100%; }
 
 .dk-menu-badge {
   position: absolute;
-  top: 2px;
-  left: 5px;
+  top: 0px;
+  left: 0px;
   background: #ff0000;
   color: #fff;
   font-size: 10px;

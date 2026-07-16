@@ -57,10 +57,8 @@ export function buildStrukPembayaran(order, settings = {}) {
   if (Number(order.discountAmount || 0) > 0) {
     lines.push(pad(`Diskon (${order.discountPercent || 0}%):`, `-${money(Number(order.discountAmount))}`));
   }
-  if (Number(order.deliveryFee || 0) > 0) {
-    const zoneLabel = order.shippingZoneCode ? ` ${order.shippingZoneCode} ${order.shippingDistanceKm || '?'}km` : '';
-    lines.push(pad(`Ongkir${zoneLabel}:`, money(Number(order.deliveryFee))));
-  }
+  const zoneLabel = order.shippingZoneCode ? ` ${order.shippingZoneCode} ${order.shippingDistanceKm || '?'}km` : '';
+  lines.push(pad(`Biaya Ongkir${zoneLabel}:`, money(Number(order.deliveryFee || 0))));
   if (Number(order.packingFee || 0) > 0) {
     lines.push(pad('Biaya Packing:', money(Number(order.packingFee))));
   }

@@ -170,7 +170,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
       .finally(() => setShippingLoading(false));
   }, [latitude, longitude]);
 
-  const deliveryFee = shippingInfo?.tariff || 0;
+  const deliveryFee = Number(shippingInfo?.tariff || 0);
   const discountAmount = 0;
   const grandTotal = subtotal - discountAmount + deliveryFee + packingFee;
 
@@ -217,6 +217,10 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
     if (customerPostalCode.length !== 5) { setFormError('Kode pos harus 5 digit'); return; }
     if (!selectedLocation) { setFormError('Pilih kelurahan dari kode pos'); return; }
     if (!customerAddress.trim()) { setFormError('Alamat detail harus diisi'); return; }
+    if (!latitude || !longitude) { setFormError('Ambil lokasi GPS dulu agar ongkir bisa dihitung sesuai zona.'); return; }
+    if (shippingLoading) { setFormError('Ongkir masih dihitung. Tunggu sebentar.'); return; }
+    if (!shippingInfo) { setFormError('Ongkir belum berhasil dihitung. Coba ambil lokasi ulang.'); return; }
+    if (shippingInfo.outOfRange) { setFormError('Alamat di luar jangkauan pengiriman. Hubungi admin.'); return; }
     setFormError('');
     setStep('confirm');
   };
@@ -253,8 +257,7 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
 
        <div className="dk-review-bill">
          <div className="dk-bill-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-         {shippingInfo && <div className="dk-bill-row"><span>Ongkir ({shippingInfo.zoneCode}, {shippingInfo.distanceKm} km)</span><strong>{money(deliveryFee)}</strong></div>}
-         {!shippingInfo && latitude && <div className="dk-bill-row"><span>Ongkir</span><strong>{shippingLoading ? 'Menghitung...' : money(0)}</strong></div>}
+          <div className="dk-bill-row"><span>Ongkir{shippingInfo?.zoneCode ? ` (${shippingInfo.zoneCode}, ${shippingInfo.distanceKm} km)` : ''}</span><strong>{shippingLoading ? 'Menghitung...' : money(deliveryFee)}</strong></div>
          <div className="dk-bill-row"><span>Biaya Packing</span><strong>{money(packingFee)}</strong></div>
          <div className="dk-bill-row dk-bill-total"><span>Total</span><strong>{money(grandTotal)}</strong></div>
        </div>
@@ -348,6 +351,16 @@ function CartReview({ cart, onClose, onCheckout, onUpdateNote, onIncrease, onDec
               </div>
               <label>Alamat Detail</label>
               <textarea className="dk-form-input dk-form-textarea" placeholder="Nama jalan, gedung, no. rumah/unit..." value={customerAddress} onChange={(e) => { setCustomerAddress(e.target.value); setFormError(''); }} rows={2} />
+            </div>
+
+            <div className="dk-form-group">
+              <label>Lokasi untuk Ongkir</label>
+              <button type="button" className={`dk-gps-btn ${gpsStatus === 'success' ? 'dk-gps-success' : ''}`} onClick={useGPS} disabled={gpsStatus === 'loading'}>
+                {gpsStatus === 'loading' ? 'Mengambil lokasi...' : gpsStatus === 'success' ? 'Lokasi GPS tersimpan' : 'Ambil Lokasi GPS'}
+              </button>
+              {latitude && longitude && <div className="dk-gps-coords">Koordinat: {Number(latitude).toFixed(6)}, {Number(longitude).toFixed(6)}</div>}
+              {shippingInfo && !shippingInfo.outOfRange && <div className="dk-address-preview">Ongkir: {money(deliveryFee)} ({shippingInfo.zoneCode}, {shippingInfo.distanceKm} km)</div>}
+              {shippingInfo?.outOfRange && <div className="dk-address-preview dk-address-warning">Alamat di luar jangkauan pengiriman.</div>}
             </div>
 
             <div className="dk-form-group">
@@ -503,7 +516,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
     dash35,
     pad35('Subtotal:', money(Number(order?.subtotal || 0))),
     ...(Number(order?.discountAmount || 0) > 0 ? [pad35(`Diskon (${order.discountPercent}%):`, `-${money(Number(order.discountAmount))}`)] : []),
-    ...(Number(order?.deliveryFee || 0) > 0 ? [pad35(`Ongkir${order.shippingZoneCode ? ` ${order.shippingZoneCode}` : ''}:`, money(Number(order.deliveryFee)))] : []),
+    pad35(`Ongkir${order.shippingZoneCode ? ` ${order.shippingZoneCode}` : ''}:`, money(Number(order?.deliveryFee || 0))),
     ...(Number(order?.packingFee || 0) > 0 ? [pad35('Biaya Packing:', money(Number(order.packingFee)))] : []),
     sep35,
     pad35('TOTAL BAYAR:', money(Number(order?.total || 0))),
@@ -722,7 +735,7 @@ function ReceiptPage({ data, onMenu, onTracking }) {
           <div className="dk-receipt-summary">
           {order.subtotal && <div className="dk-receipt-summary-row"><span>Subtotal</span><span>{money(Number(order.subtotal))}</span></div>}
           {Number(order.discountAmount || 0) > 0 && <div className="dk-receipt-summary-row"><span>Diskon ({order.discountPercent || 0}%)</span><span>-{money(Number(order.discountAmount))}</span></div>}
-          {Number(order.deliveryFee || 0) > 0 && <div className="dk-receipt-summary-row"><span>Ongkir{order.shippingZoneCode ? ` (${order.shippingZoneCode}, ${order.shippingDistanceKm || '?'} km)` : ''}</span><span>{money(Number(order.deliveryFee))}</span></div>}
+          <div className="dk-receipt-summary-row"><span>Biaya Ongkir{order.shippingZoneCode ? ` (${order.shippingZoneCode}, ${order.shippingDistanceKm || '?'} km)` : ''}</span><span>{money(Number(order.deliveryFee || 0))}</span></div>
           {Number(order.packingFee || 0) > 0 && <div className="dk-receipt-summary-row"><span>Biaya Packing</span><span>{money(Number(order.packingFee))}</span></div>}
           {Number(order.serviceFee || 0) > 0 && Number(order.packingFee || 0) === 0 && <div className="dk-receipt-summary-row"><span>Biaya Layanan</span><span>{money(Number(order.serviceFee))}</span></div>}
           <div className="dk-receipt-summary-row dk-receipt-summary-total"><span>TOTAL BAYAR</span><strong>{money(Number(order.total || 0))}</strong></div>
